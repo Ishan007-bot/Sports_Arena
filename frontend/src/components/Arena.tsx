@@ -171,6 +171,26 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
 
   const handleStartQuickMatch = () => {
     if (selectedTeam1 && selectedTeam2) {
+      // Create teams if they don't exist
+      const team1 = teams.find(t => t.name === selectedTeam1) || {
+        id: Date.now().toString(),
+        name: selectedTeam1,
+        members: ['Player 1']
+      };
+      const team2 = teams.find(t => t.name === selectedTeam2) || {
+        id: (Date.now() + 1).toString(),
+        name: selectedTeam2,
+        members: ['Player 1']
+      };
+
+      // Add teams to the teams list if they don't exist
+      if (!teams.find(t => t.name === selectedTeam1)) {
+        setTeams([...teams, team1]);
+      }
+      if (!teams.find(t => t.name === selectedTeam2)) {
+        setTeams([...teams, team2]);
+      }
+
       const newMatch: Match = {
         id: Date.now().toString(),
         tournamentId: '',
@@ -403,6 +423,65 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
             />
           </div>
         </div>
+        
+        <div className="quick-match-teams">
+          <div className="quick-team-section">
+            <h3>Team 1 Members</h3>
+            <div className="member-list">
+              {teams.find(team => team.name === selectedTeam1)?.members.map((member, index) => (
+                <div key={index} className="member-item">
+                  <input
+                    type="text"
+                    className="member-input"
+                    value={member}
+                    onChange={(e) => handleMemberChange(teams.find(team => team.name === selectedTeam1)?.id || '', index, e.target.value)}
+                    placeholder={`Player ${index + 1} Name`}
+                  />
+                </div>
+              )) || []}
+              <button 
+                onClick={() => {
+                  const team = teams.find(t => t.name === selectedTeam1);
+                  if (team) {
+                    handleAddMember(team.id);
+                  }
+                }}
+                className="add-member"
+              >
+                + Add Member
+              </button>
+            </div>
+          </div>
+          
+          <div className="quick-team-section">
+            <h3>Team 2 Members</h3>
+            <div className="member-list">
+              {teams.find(team => team.name === selectedTeam2)?.members.map((member, index) => (
+                <div key={index} className="member-item">
+                  <input
+                    type="text"
+                    className="member-input"
+                    value={member}
+                    onChange={(e) => handleMemberChange(teams.find(team => team.name === selectedTeam2)?.id || '', index, e.target.value)}
+                    placeholder={`Player ${index + 1} Name`}
+                  />
+                </div>
+              )) || []}
+              <button 
+                onClick={() => {
+                  const team = teams.find(t => t.name === selectedTeam2);
+                  if (team) {
+                    handleAddMember(team.id);
+                  }
+                }}
+                className="add-member"
+              >
+                + Add Member
+              </button>
+            </div>
+          </div>
+        </div>
+        
         <button 
           onClick={handleStartQuickMatch}
           className="submit-button"
@@ -416,10 +495,15 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
 
   const renderTournamentMatches = () => (
     <div className="content-section">
-      <h2 className="section-title">
-        <span className="section-icon">⚽</span>
-        Tournament Matches
-      </h2>
+      <div className="section-header">
+        <button className="back-to-main" onClick={() => setActiveView('main')}>
+          ← Back to Main
+        </button>
+        <h2 className="section-title">
+          <span className="section-icon">⚽</span>
+          Tournament Matches
+        </h2>
+      </div>
       
       <div className="matches-grid">
         {selectedTournament?.teams && selectedTournament.teams.length >= 2 ? (
@@ -666,10 +750,20 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
 
   const renderLiveScoring = () => (
     <div className="content-section">
-      <h2 className="section-title">
-        <span className="section-icon">📊</span>
-        Live Scoring
-      </h2>
+      <div className="section-header">
+        <button className="back-to-main" onClick={() => setActiveView('main')}>
+          ← Back to Main
+        </button>
+        {selectedTournament && (
+          <button className="back-to-tournament" onClick={() => setActiveView('tournament')}>
+            ← Back to Tournament
+          </button>
+        )}
+        <h2 className="section-title">
+          <span className="section-icon">📊</span>
+          Live Scoring
+        </h2>
+      </div>
       {currentMatch ? (
         <div className="scoring-board">
           <div className="match-info">
@@ -768,10 +862,15 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
 
   const renderHistory = () => (
     <div className="content-section">
-      <h2 className="section-title">
-        <span className="section-icon">📜</span>
-        History
-      </h2>
+      <div className="section-header">
+        <button className="back-to-main" onClick={() => setActiveView('main')}>
+          ← Back to Main
+        </button>
+        <h2 className="section-title">
+          <span className="section-icon">📜</span>
+          History
+        </h2>
+      </div>
       <div className="history-section">
         <div className="history-tabs">
           <button 
