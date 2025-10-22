@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Arena.css';
 
 interface Team {
@@ -41,11 +42,13 @@ interface ArenaProps {
 }
 
 const Arena: React.FC<ArenaProps> = ({ sport }) => {
-  const [activeTab, setActiveTab] = useState('tournament');
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState('main'); // main, tournament, quick-match, history
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
-  const [historyTab, setHistoryTab] = useState('tournaments');
+  const [quickMatches, setQuickMatches] = useState<Match[]>([]);
+  const [allMatches, setAllMatches] = useState<Match[]>([]);
+  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
 
   // Tournament Creation
   const [tournamentForm, setTournamentForm] = useState({
@@ -60,14 +63,15 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
   const [newTeam, setNewTeam] = useState({ name: '', members: [''] });
 
   // Match Management
-  const [selectedTournament, setSelectedTournament] = useState('');
   const [selectedTeam1, setSelectedTeam1] = useState('');
   const [selectedTeam2, setSelectedTeam2] = useState('');
 
   // Live Scoring
-  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [liveScore1, setLiveScore1] = useState(0);
   const [liveScore2, setLiveScore2] = useState(0);
+
+  // History
+  const [historyTab, setHistoryTab] = useState('tournaments');
 
   const handleTournamentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +86,8 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     };
     setTournaments([...tournaments, newTournament]);
     setTournamentForm({ name: '', startDate: '', endDate: '', description: '' });
+    setActiveView('tournament');
+    setSelectedTournament(newTournament);
   };
 
   const handleAddTeam = () => {
@@ -125,7 +131,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     if (selectedTournament && selectedTeam1 && selectedTeam2) {
       const newMatch: Match = {
         id: Date.now().toString(),
-        tournamentId: selectedTournament,
+        tournamentId: selectedTournament.id,
         team1: selectedTeam1,
         team2: selectedTeam2,
         score1: 0,
@@ -133,7 +139,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         status: 'live',
         startTime: new Date().toISOString()
       };
-      setMatches([...matches, newMatch]);
+      setAllMatches([...allMatches, newMatch]);
       setCurrentMatch(newMatch);
       setLiveScore1(0);
       setLiveScore2(0);
@@ -142,7 +148,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
 
   const handleEndMatch = () => {
     if (currentMatch) {
-      setMatches(matches.map(match => 
+      setAllMatches(allMatches.map(match => 
         match.id === currentMatch.id 
           ? { ...match, status: 'finished', endTime: new Date().toISOString() }
           : match
@@ -160,6 +166,45 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         setLiveScore2(liveScore2 + points);
         setCurrentMatch({ ...currentMatch, score2: liveScore2 + points });
       }
+    }
+  };
+
+  const handleStartQuickMatch = () => {
+    if (selectedTeam1 && selectedTeam2) {
+      const newMatch: Match = {
+        id: Date.now().toString(),
+        tournamentId: '',
+        team1: selectedTeam1,
+        team2: selectedTeam2,
+        score1: 0,
+        score2: 0,
+        status: 'live',
+        startTime: new Date().toISOString()
+      };
+      setQuickMatches([...quickMatches, newMatch]);
+      setAllMatches([...allMatches, newMatch]);
+      setCurrentMatch(newMatch);
+      setLiveScore1(0);
+      setLiveScore2(0);
+      setActiveView('quick-match-live');
+    }
+  };
+
+  const handleCreateTournamentMatch = () => {
+    if (selectedTournament && selectedTeam1 && selectedTeam2) {
+      const newMatch: Match = {
+        id: Date.now().toString(),
+        tournamentId: selectedTournament.id,
+        team1: selectedTeam1,
+        team2: selectedTeam2,
+        score1: 0,
+        score2: 0,
+        status: 'upcoming',
+        startTime: new Date().toISOString()
+      };
+      setAllMatches([...allMatches, newMatch]);
+      setSelectedTeam1('');
+      setSelectedTeam2('');
     }
   };
 
@@ -184,12 +229,96 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     }
   };
 
+  const renderMainView = () => (
+    <div className="arena-main-view">
+      <div className="main-options">
+        <div className="main-option-card" onClick={() => setActiveView('create-tournament')}>
+          <div className="option-icon">🏆</div>
+          <h3>Create Tournament</h3>
+          <p>Organize a structured tournament with multiple teams and matches</p>
+        </div>
+        
+        <div className="main-option-card" onClick={() => setActiveView('quick-match')}>
+          <div className="option-icon">⚡</div>
+          <h3>Quick Match</h3>
+          <p>Start a quick match between two teams without tournament structure</p>
+        </div>
+        
+        <div className="main-option-card" onClick={() => setActiveView('history')}>
+          <div className="option-icon">📜</div>
+          <h3>History</h3>
+          <p>View all previous tournaments, matches, and statistics</p>
+        </div>
+      </div>
+      
+      {tournaments.length > 0 && (
+        <div className="recent-tournaments">
+          <h3>Recent Tournaments</h3>
+          <div className="tournament-list">
+            {tournaments.slice(0, 3).map(tournament => (
+              <div key={tournament.id} className="tournament-card" onClick={() => {
+                setSelectedTournament(tournament);
+                setActiveView('tournament');
+              }}>
+                <h4>{tournament.name}</h4>
+                <p>{tournament.teams.length} teams registered</p>
+                <span className="tournament-date">{new Date(tournament.startDate).toLocaleDateString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTournamentManagement = () => (
+    <div className="tournament-management">
+      <div className="tournament-header">
+        <button className="back-to-main" onClick={() => setActiveView('main')}>
+          ← Back to Main
+        </button>
+        <h2>{selectedTournament?.name}</h2>
+        <p>{selectedTournament?.description}</p>
+      </div>
+      
+      <div className="tournament-tabs">
+        <button 
+          className={`tab-button ${activeView === 'tournament' ? 'active' : ''}`}
+          onClick={() => setActiveView('tournament')}
+        >
+          Teams ({selectedTournament?.teams.length || 0})
+        </button>
+        <button 
+          className={`tab-button ${activeView === 'tournament-matches' ? 'active' : ''}`}
+          onClick={() => setActiveView('tournament-matches')}
+        >
+          Matches
+        </button>
+        <button 
+          className={`tab-button ${activeView === 'tournament-live' ? 'active' : ''}`}
+          onClick={() => setActiveView('tournament-live')}
+        >
+          Live Scoring
+        </button>
+      </div>
+      
+      {activeView === 'tournament' && renderTeamRegistration()}
+      {activeView === 'tournament-matches' && renderTournamentMatches()}
+      {activeView === 'tournament-live' && renderLiveScoring()}
+    </div>
+  );
+
   const renderTournamentCreation = () => (
     <div className="content-section">
-      <h2 className="section-title">
-        <span className="section-icon">🏆</span>
-        Create Tournament
-      </h2>
+      <div className="section-header">
+        <button className="back-to-main" onClick={() => setActiveView('main')}>
+          ← Back to Main
+        </button>
+        <h2 className="section-title">
+          <span className="section-icon">🏆</span>
+          Create Tournament
+        </h2>
+      </div>
       <form onSubmit={handleTournamentSubmit} className="tournament-form">
         <div className="form-group">
           <label className="form-label">Tournament Name</label>
@@ -236,6 +365,140 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           Create Tournament
         </button>
       </form>
+    </div>
+  );
+
+  const renderQuickMatch = () => (
+    <div className="content-section">
+      <div className="section-header">
+        <button className="back-to-main" onClick={() => setActiveView('main')}>
+          ← Back to Main
+        </button>
+        <h2 className="section-title">
+          <span className="section-icon">⚡</span>
+          Quick Match Setup
+        </h2>
+      </div>
+      
+      <div className="quick-match-form">
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Team 1 Name</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Enter Team 1 name"
+              value={selectedTeam1}
+              onChange={(e) => setSelectedTeam1(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Team 2 Name</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Enter Team 2 name"
+              value={selectedTeam2}
+              onChange={(e) => setSelectedTeam2(e.target.value)}
+            />
+          </div>
+        </div>
+        <button 
+          onClick={handleStartQuickMatch}
+          className="submit-button"
+          disabled={!selectedTeam1 || !selectedTeam2}
+        >
+          Start Quick Match
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderTournamentMatches = () => (
+    <div className="content-section">
+      <h2 className="section-title">
+        <span className="section-icon">⚽</span>
+        Tournament Matches
+      </h2>
+      
+      <div className="matches-grid">
+        {selectedTournament?.teams && selectedTournament.teams.length >= 2 ? (
+          <div className="create-match-section">
+            <h3>Create New Match</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Team 1</label>
+                <select 
+                  className="form-select"
+                  value={selectedTeam1}
+                  onChange={(e) => setSelectedTeam1(e.target.value)}
+                >
+                  <option value="">Choose Team 1</option>
+                  {selectedTournament?.teams.map(team => (
+                    <option key={team.id} value={team.name}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Team 2</label>
+                <select 
+                  className="form-select"
+                  value={selectedTeam2}
+                  onChange={(e) => setSelectedTeam2(e.target.value)}
+                >
+                  <option value="">Choose Team 2</option>
+                  {selectedTournament?.teams.map(team => (
+                    <option key={team.id} value={team.name}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button 
+              onClick={handleCreateTournamentMatch}
+              className="submit-button"
+              disabled={!selectedTeam1 || !selectedTeam2 || selectedTeam1 === selectedTeam2}
+            >
+              Create Match
+            </button>
+          </div>
+        ) : (
+          <p>Register at least 2 teams to create matches</p>
+        )}
+        
+        <div className="matches-list">
+          <h3>Tournament Matches</h3>
+          {allMatches
+            .filter(match => match.tournamentId === selectedTournament?.id)
+            .map(match => (
+              <div key={match.id} className="match-card">
+                <div className="match-info">
+                  <span className="team-name">{match.team1}</span>
+                  <span className="vs">VS</span>
+                  <span className="team-name">{match.team2}</span>
+                </div>
+                <div className="match-score">
+                  <span>{match.score1} - {match.score2}</span>
+                </div>
+                <div className="match-status">
+                  <span className={`status ${match.status}`}>{match.status}</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    setCurrentMatch(match);
+                    setActiveView('tournament-live');
+                  }}
+                  className="score-button"
+                >
+                  {match.status === 'live' ? 'Update Score' : 'Start Match'}
+                </button>
+              </div>
+            ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -331,8 +594,11 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
             <label className="form-label">Select Tournament</label>
             <select 
               className="form-select"
-              value={selectedTournament}
-              onChange={(e) => setSelectedTournament(e.target.value)}
+              value={selectedTournament?.id || ''}
+              onChange={(e) => {
+                const tournament = tournaments.find(t => t.id === e.target.value);
+                setSelectedTournament(tournament || null);
+              }}
             >
               <option value="">Choose a tournament</option>
               {tournaments.map(tournament => (
@@ -550,7 +816,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               </div>
             ))
           ) : (
-            matches.map(match => (
+            allMatches.map(match => (
               <div key={match.id} className="history-item">
                 <div className="history-header">
                   <div className="history-title">{match.team1} vs {match.team2}</div>
@@ -581,57 +847,28 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
   return (
     <div className="arena-page">
       <div className="arena-container">
+        <button 
+          className="back-button"
+          onClick={() => navigate('/')}
+          title="Go back to home"
+        >
+          ← Back to Home
+        </button>
+        
         <div className="arena-header">
           <h1 className="arena-title">{sport} Arena</h1>
           <p className="arena-subtitle">Manage tournaments, teams, and live scoring for {sport}</p>
         </div>
 
-        <nav className="arena-nav">
-          <button 
-            className={`nav-button ${activeTab === 'tournament' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tournament')}
-          >
-            Create Tournament
-          </button>
-          <button 
-            className={`nav-button ${activeTab === 'teams' ? 'active' : ''}`}
-            onClick={() => setActiveTab('teams')}
-          >
-            Register Teams
-          </button>
-          <button 
-            className={`nav-button ${activeTab === 'matches' ? 'active' : ''}`}
-            onClick={() => setActiveTab('matches')}
-          >
-            Start Match
-          </button>
-          <button 
-            className={`nav-button ${activeTab === 'scoring' ? 'active' : ''}`}
-            onClick={() => setActiveTab('scoring')}
-          >
-            Live Scoring
-          </button>
-          <button 
-            className={`nav-button ${activeTab === 'players' ? 'active' : ''}`}
-            onClick={() => setActiveTab('players')}
-          >
-            Player Stats
-          </button>
-          <button 
-            className={`nav-button ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
-          >
-            History
-          </button>
-        </nav>
 
         <div className="arena-content">
-          {activeTab === 'tournament' && renderTournamentCreation()}
-          {activeTab === 'teams' && renderTeamRegistration()}
-          {activeTab === 'matches' && renderMatchManagement()}
-          {activeTab === 'scoring' && renderLiveScoring()}
-          {activeTab === 'players' && renderPlayerContributions()}
-          {activeTab === 'history' && renderHistory()}
+          {activeView === 'main' && renderMainView()}
+          {activeView === 'create-tournament' && renderTournamentCreation()}
+          {activeView === 'tournament' && selectedTournament && renderTournamentManagement()}
+          {activeView === 'quick-match' && renderQuickMatch()}
+          {activeView === 'quick-match-live' && renderLiveScoring()}
+          {activeView === 'tournament-live' && renderLiveScoring()}
+          {activeView === 'history' && renderHistory()}
         </div>
       </div>
     </div>
