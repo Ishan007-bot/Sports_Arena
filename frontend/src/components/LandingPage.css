@@ -165,6 +165,20 @@
   letter-spacing: -0.02em;
 }
 
+.section-heading-image {
+  text-align: center;
+  margin-bottom: 5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.heading-img {
+  max-width: 100%;
+  height: auto;
+  max-height: 55px;
+  object-fit: contain;
+}
+
 .sports-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));

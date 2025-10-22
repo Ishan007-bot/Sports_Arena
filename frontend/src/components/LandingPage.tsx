@@ -40,7 +40,9 @@ const LandingPage: React.FC = () => {
       {/* Sports Grid Section */}
       <section id="sports" className="sports-section">
         <div className="container">
-          <h2 className="section-title">Choose Your Sport</h2>
+          <div className="section-heading-image">
+            <img src="/sports-choose-heading.png" alt="Choose Your Sport" className="heading-img" />
+          </div>
           <div className="sports-grid">
             {sports.map((sport, index) => (
               <div key={index} className="sport-card">
@@ -59,7 +61,9 @@ const LandingPage: React.FC = () => {
       {/* Live Scoreboard Section */}
       <section id="livescores" className="live-scoreboard-section">
         <div className="container">
-          <h2 className="section-title">Live Scoreboard</h2>
+          <div className="section-heading-image">
+            <img src="/live-scoreboard-heading.png" alt="Live Scoreboard" className="heading-img" />
+          </div>
           <div className="scoreboard-grid">
             <div className="scoreboard-card">
               <div className="scoreboard-header">
@@ -220,7 +224,9 @@ const LandingPage: React.FC = () => {
       {/* Features Section */}
       <section className="features-section">
         <div className="container">
-          <h2 className="section-title">Why Choose Sports Arena?</h2>
+          <div className="section-heading-image">
+            <img src="/why-choose-heading.png" alt="Why Choose Sports Arena?" className="heading-img" />
+          </div>
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">📊</div>
