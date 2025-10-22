@@ -187,7 +187,7 @@ const LandingPage: React.FC = () => {
                 <div className="developer-details">
                   <p className="developer-role">Developer</p>
                   <h4 className="developer-name">Ishan Ganguly</h4>
-                  <p className="developer-batch">Batch of '27 SST</p>
+                  <p className="developer-batch">Batch of '28 SST</p>
                 </div>
               </div>
             </div>
