@@ -56,6 +56,114 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* Live Scoreboard Section */}
+      <section className="live-scoreboard-section">
+        <div className="container">
+          <h2 className="section-title">Live Scoreboard</h2>
+          <div className="scoreboard-grid">
+            <div className="scoreboard-card">
+              <div className="scoreboard-header">
+                <div className="sport-info">
+                  <img src="/cricket-logo.png" alt="Cricket" className="sport-logo-small" />
+                  <span className="sport-name">Cricket</span>
+                </div>
+                <div className="match-status live">LIVE</div>
+              </div>
+              <div className="match-details">
+                <div className="team">
+                  <span className="team-name">India</span>
+                  <span className="team-score">245/3</span>
+                </div>
+                <div className="vs">vs</div>
+                <div className="team">
+                  <span className="team-name">Australia</span>
+                  <span className="team-score">189/7</span>
+                </div>
+              </div>
+              <div className="match-info">
+                <span className="overs">Overs: 35.2</span>
+                <span className="run-rate">RR: 6.8</span>
+              </div>
+            </div>
+
+            <div className="scoreboard-card">
+              <div className="scoreboard-header">
+                <div className="sport-info">
+                  <img src="/football-logo.png" alt="Football" className="sport-logo-small" />
+                  <span className="sport-name">Football</span>
+                </div>
+                <div className="match-status live">LIVE</div>
+              </div>
+              <div className="match-details">
+                <div className="team">
+                  <span className="team-name">Barcelona</span>
+                  <span className="team-score">2</span>
+                </div>
+                <div className="vs">vs</div>
+                <div className="team">
+                  <span className="team-name">Real Madrid</span>
+                  <span className="team-score">1</span>
+                </div>
+              </div>
+              <div className="match-info">
+                <span className="time">75'</span>
+                <span className="stadium">Camp Nou</span>
+              </div>
+            </div>
+
+            <div className="scoreboard-card">
+              <div className="scoreboard-header">
+                <div className="sport-info">
+                  <img src="/basketball-logo.png" alt="Basketball" className="sport-logo-small" />
+                  <span className="sport-name">Basketball</span>
+                </div>
+                <div className="match-status live">LIVE</div>
+              </div>
+              <div className="match-details">
+                <div className="team">
+                  <span className="team-name">Lakers</span>
+                  <span className="team-score">98</span>
+                </div>
+                <div className="vs">vs</div>
+                <div className="team">
+                  <span className="team-name">Warriors</span>
+                  <span className="team-score">95</span>
+                </div>
+              </div>
+              <div className="match-info">
+                <span className="quarter">Q4</span>
+                <span className="time-left">2:45</span>
+              </div>
+            </div>
+
+            <div className="scoreboard-card">
+              <div className="scoreboard-header">
+                <div className="sport-info">
+                  <img src="/table-tennis-logo.png" alt="Table Tennis" className="sport-logo-small" />
+                  <span className="sport-name">Table Tennis</span>
+                </div>
+                <div className="match-status live">LIVE</div>
+              </div>
+              <div className="match-details">
+                <div className="team">
+                  <span className="team-name">Ma Long</span>
+                  <span className="team-score">3</span>
+                </div>
+                <div className="vs">vs</div>
+                <div className="team">
+                  <span className="team-name">Fan Zhendong</span>
+                  <span className="team-score">2</span>
+                </div>
+              </div>
+              <div className="match-info">
+                <span className="set">Set 5</span>
+                <span className="score">11-9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Scrolling Images Section */}
       <section className="scrolling-images-section">
         <div className="container">
@@ -129,17 +237,6 @@ const LandingPage: React.FC = () => {
               <h3>Tournaments</h3>
               <p>Organize and manage tournaments across multiple sports</p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="cta-section">
-        <div className="container">
-          <div className="cta-content">
-            <h2>Ready to Start Scoring?</h2>
-            <p>Join thousands of sports enthusiasts using Sports Arena</p>
-            <button className="btn-primary large">Start Now</button>
           </div>
         </div>
       </section>
