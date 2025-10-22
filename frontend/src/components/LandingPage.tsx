@@ -15,7 +15,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="landing-page">
       {/* Hero Section */}
-      <section className="hero-section">
+      <section id="home" className="hero-section">
         <div className="container">
           <div className="hero-content-wrapper">
             <div className="hero-content">
@@ -38,7 +38,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Sports Grid Section */}
-      <section className="sports-section">
+      <section id="sports" className="sports-section">
         <div className="container">
           <h2 className="section-title">Choose Your Sport</h2>
           <div className="sports-grid">
@@ -57,7 +57,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Live Scoreboard Section */}
-      <section className="live-scoreboard-section">
+      <section id="livescores" className="live-scoreboard-section">
         <div className="container">
           <h2 className="section-title">Live Scoreboard</h2>
           <div className="scoreboard-grid">
