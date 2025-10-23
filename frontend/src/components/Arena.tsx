@@ -81,10 +81,34 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
   const [cricketOvers, setCricketOvers] = useState(0);
   const [cricketBalls, setCricketBalls] = useState(0);
   const [cricketExtras, setCricketExtras] = useState({wide: 0, noBall: 0, bye: 0, legBye: 0});
-  const [currentBatsman1, setCurrentBatsman1] = useState({name: '', runs: 0, balls: 0});
-  const [currentBatsman2, setCurrentBatsman2] = useState({name: '', runs: 0, balls: 0});
+  const [currentBatsman1, setCurrentBatsman1] = useState({name: '', runs: 0, balls: 0, isOnStrike: true});
+  const [currentBatsman2, setCurrentBatsman2] = useState({name: '', runs: 0, balls: 0, isOnStrike: false});
   const [currentBowler, setCurrentBowler] = useState({name: '', overs: 0, balls: 0, runs: 0, wickets: 0});
   const [ballHistory, setBallHistory] = useState<Array<{type: string, runs: number, batsman: string, bowler: string}>>([]);
+  
+  // Cricket match setup
+  const [cricketMatchSetup, setCricketMatchSetup] = useState({
+    totalOvers: 20,
+    tossWinner: '',
+    tossDecision: '', // 'bat' or 'bowl'
+    isSetupComplete: false
+  });
+  
+  // Cricket player management
+  const [cricketPlayers, setCricketPlayers] = useState({
+    battingTeam: [] as Array<{name: string, runs: number, balls: number, isOut: boolean, howOut: string}>,
+    bowlingTeam: [] as Array<{name: string, overs: number, balls: number, runs: number, wickets: number}>,
+    availableBatsmen: [] as string[],
+    availableBowlers: [] as string[]
+  });
+  
+  // Cricket match state
+  const [cricketMatchState, setCricketMatchState] = useState({
+    isMatchStarted: false,
+    isInningsBreak: false,
+    currentInnings: 1,
+    target: 0
+  });
   
   // Basketball-specific state
   const [basketballScore1, setBasketballScore1] = useState(0);
@@ -93,6 +117,10 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
   const [basketballFouls2, setBasketballFouls2] = useState(0);
   const [basketballQuarter, setBasketballQuarter] = useState(1);
   const [basketballTime, setBasketballTime] = useState(600); // 10 minutes in seconds
+  const [basketballQuarterDuration, setBasketballQuarterDuration] = useState(10); // Quarter duration in minutes
+  const [basketballIsTimerRunning, setBasketballIsTimerRunning] = useState(false);
+  const [basketballTotalQuarters, setBasketballTotalQuarters] = useState(4); // Total number of quarters
+  const [basketballGameCompleted, setBasketballGameCompleted] = useState(false);
   
   // Chess-specific state
   const [chessTime1, setChessTime1] = useState(1800); // 30 minutes in seconds
@@ -313,9 +341,75 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     return () => clearInterval(interval);
   }, [isTimerRunning, timeRemaining, matchPhase]);
 
-  // Cricket scoring functions
-  const handleCricketRun = (runs: number) => {
-    setCricketRuns(prev => prev + runs);
+  // Basketball timer effect
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (basketballIsTimerRunning && basketballTime > 0) {
+      interval = setInterval(() => {
+        setBasketballTime(prev => {
+          if (prev <= 1) {
+            setBasketballIsTimerRunning(false);
+            // Check if this was the last quarter
+            if (basketballQuarter >= basketballTotalQuarters) {
+              setBasketballGameCompleted(true);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [basketballIsTimerRunning, basketballTime, basketballQuarter, basketballTotalQuarters]);
+
+  // Cricket match setup functions
+  const handleCricketOversChange = (overs: number) => {
+    setCricketMatchSetup(prev => ({...prev, totalOvers: overs}));
+  };
+
+  const handleTossWinner = (team: string) => {
+    setCricketMatchSetup(prev => ({...prev, tossWinner: team}));
+  };
+
+  const handleTossDecision = (decision: 'bat' | 'bowl') => {
+    setCricketMatchSetup(prev => ({...prev, tossDecision: decision}));
+  };
+
+  const initializeCricketPlayers = () => {
+    if (currentMatch && currentMatch.team1 && currentMatch.team2) {
+      // Get team members from the match teams
+      const team1Members = teams.find(t => t.name === currentMatch.team1)?.members || [];
+      const team2Members = teams.find(t => t.name === currentMatch.team2)?.members || [];
+      
+      setCricketPlayers({
+        battingTeam: team1Members.map(member => ({name: member, runs: 0, balls: 0, isOut: false, howOut: ''})),
+        bowlingTeam: team2Members.map(member => ({name: member, overs: 0, balls: 0, runs: 0, wickets: 0})),
+        availableBatsmen: team1Members,
+        availableBowlers: team2Members
+      });
+    }
+  };
+
+  const startCricketMatch = () => {
+    initializeCricketPlayers();
+    setCricketMatchState(prev => ({...prev, isMatchStarted: true}));
+    setCricketMatchSetup(prev => ({...prev, isSetupComplete: true}));
+  };
+
+  const selectBatsman = (batsmanName: string, position: 1 | 2) => {
+    if (position === 1) {
+      setCurrentBatsman1(prev => ({...prev, name: batsmanName}));
+    } else {
+      setCurrentBatsman2(prev => ({...prev, name: batsmanName}));
+    }
+  };
+
+  const selectBowler = (bowlerName: string) => {
+    setCurrentBowler(prev => ({...prev, name: bowlerName}));
+  };
+
+  const handleWicketFall = (howOut: string) => {
+    setCricketWickets(prev => prev + 1);
     setCricketBalls(prev => {
       const newBalls = prev + 1;
       if (newBalls >= 6) {
@@ -324,7 +418,57 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
       }
       return newBalls % 6;
     });
-    setBallHistory(prev => [...prev, {type: 'run', runs, batsman: currentBatsman1.name, bowler: currentBowler.name}]);
+    setCurrentBowler(prev => ({...prev, wickets: prev.wickets + 1}));
+    setBallHistory(prev => [...prev, {type: 'wicket', runs: 0, batsman: currentBatsman1.name, bowler: currentBowler.name}]);
+    
+    // Mark current batsman as out
+    setCricketPlayers(prev => ({
+      ...prev,
+      battingTeam: prev.battingTeam.map(batsman => 
+        batsman.name === currentBatsman1.name 
+          ? {...batsman, isOut: true, howOut: howOut}
+          : batsman
+      )
+    }));
+  };
+
+  const changeStrike = () => {
+    setCurrentBatsman1(prev => ({...prev, isOnStrike: !prev.isOnStrike}));
+    setCurrentBatsman2(prev => ({...prev, isOnStrike: !prev.isOnStrike}));
+  };
+
+  const handleOverComplete = () => {
+    setCricketOvers(prev => prev + 1);
+    setCricketBalls(0);
+    setCurrentBowler(prev => ({...prev, overs: prev.overs + 1}));
+    changeStrike(); // Change strike after over
+  };
+
+  // Cricket scoring functions
+  const handleCricketRun = (runs: number) => {
+    setCricketRuns(prev => prev + runs);
+    setCricketBalls(prev => {
+      const newBalls = prev + 1;
+      if (newBalls >= 6) {
+        handleOverComplete();
+        return 0;
+      }
+      return newBalls;
+    });
+    
+    // Update batsman stats
+    if (currentBatsman1.isOnStrike) {
+      setCurrentBatsman1(prev => ({...prev, runs: prev.runs + runs, balls: prev.balls + 1}));
+    } else {
+      setCurrentBatsman2(prev => ({...prev, runs: prev.runs + runs, balls: prev.balls + 1}));
+    }
+    
+    // Change strike for odd runs
+    if (runs % 2 === 1) {
+      changeStrike();
+    }
+    
+    setBallHistory(prev => [...prev, {type: 'run', runs, batsman: currentBatsman1.isOnStrike ? currentBatsman1.name : currentBatsman2.name, bowler: currentBowler.name}]);
   };
 
   const handleCricketWicket = () => {
@@ -397,6 +541,59 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     } else {
       setBasketballFouls2(prev => prev + 1);
     }
+  };
+
+  const handleBasketballQuarterDurationChange = (duration: number) => {
+    setBasketballQuarterDuration(duration);
+    setBasketballTime(duration * 60); // Convert minutes to seconds
+  };
+
+  const handleBasketballTotalQuartersChange = (quarters: number) => {
+    setBasketballTotalQuarters(quarters);
+    // Reset game if changing quarters mid-game
+    if (basketballQuarter > quarters) {
+      setBasketballQuarter(1);
+      setBasketballTime(basketballQuarterDuration * 60);
+      setBasketballIsTimerRunning(false);
+      setBasketballGameCompleted(false);
+    }
+  };
+
+  const startBasketballTimer = () => {
+    if (!basketballGameCompleted) {
+      setBasketballIsTimerRunning(true);
+    }
+  };
+
+  const pauseBasketballTimer = () => {
+    setBasketballIsTimerRunning(false);
+  };
+
+  const resetBasketballTimer = () => {
+    setBasketballIsTimerRunning(false);
+    setBasketballTime(basketballQuarterDuration * 60);
+  };
+
+  const nextBasketballQuarter = () => {
+    if (basketballQuarter < basketballTotalQuarters) {
+      setBasketballQuarter(prev => prev + 1);
+      setBasketballTime(basketballQuarterDuration * 60);
+      setBasketballIsTimerRunning(false);
+    } else {
+      // Game completed
+      setBasketballGameCompleted(true);
+    }
+  };
+
+  const resetBasketballGame = () => {
+    setBasketballScore1(0);
+    setBasketballScore2(0);
+    setBasketballFouls1(0);
+    setBasketballFouls2(0);
+    setBasketballQuarter(1);
+    setBasketballTime(basketballQuarterDuration * 60);
+    setBasketballIsTimerRunning(false);
+    setBasketballGameCompleted(false);
   };
 
   // Chess functions
@@ -602,6 +799,12 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           <div className="option-icon">⚡</div>
           <h3>Quick Match</h3>
           <p>Start a quick match between two teams without tournament structure</p>
+        </div>
+        
+        <div className="main-option-card" onClick={() => setActiveView('live-scoring')}>
+          <div className="option-icon">📊</div>
+          <h3>Live Scores</h3>
+          <p>View and manage all active matches and live scoring</p>
         </div>
         
         <div className="main-option-card" onClick={() => setActiveView('history')}>
@@ -1156,6 +1359,67 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     </div>
   );
 
+  const renderLiveScoringDashboard = () => (
+    <div className="content-section">
+      <div className="section-header">
+        <button className="back-to-main" onClick={() => setActiveView('main')}>
+          ← Back to Main
+        </button>
+        <h2 className="section-title">
+          <span className="section-icon">📊</span>
+          Live Scoring Dashboard
+        </h2>
+      </div>
+      
+      <div className="live-matches-section">
+        <h3>Active Matches</h3>
+        {allMatches.filter(match => match.status === 'live').length > 0 ? (
+          <div className="live-matches-grid">
+            {allMatches
+              .filter(match => match.status === 'live')
+              .map(match => (
+                <div key={match.id} className="live-match-card">
+                  <div className="match-header">
+                    <div className="match-teams">
+                      <span className="team-name">{match.team1}</span>
+                      <span className="vs">VS</span>
+                      <span className="team-name">{match.team2}</span>
+                    </div>
+                    <div className="match-sport">
+                      <span className="sport-badge">{sport}</span>
+                    </div>
+                  </div>
+                  <div className="match-score">
+                    <div className="score-display">
+                      <span className="score">{match.score1}</span>
+                      <span className="separator">-</span>
+                      <span className="score">{match.score2}</span>
+                    </div>
+                  </div>
+                  <div className="match-actions">
+                    <button 
+                      onClick={() => {
+                        setCurrentMatch(match);
+                        setActiveView(match.tournamentId ? 'tournament-live' : 'quick-match-live');
+                      }}
+                      className="score-button"
+                    >
+                      Update Score
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <div className="no-live-matches">
+            <p>No active matches at the moment.</p>
+            <p>Start a match to begin live scoring.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderLiveScoring = () => {
     if (sport === 'Football') {
       return renderFootballScoring();
@@ -1477,72 +1741,238 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
       
       {currentMatch && (
         <div className="cricket-scoring">
-          {/* Scoreboard */}
-          <div className="cricket-scoreboard">
-            <div className="score-display">
-              <div className="team-name">{currentMatch.team1}</div>
-              <div className="score">{cricketRuns} / {cricketWickets}</div>
-              <div className="overs">{cricketOvers}.{cricketBalls}</div>
+          {!cricketMatchSetup.isSetupComplete ? (
+            <div className="cricket-match-setup">
+              <h3>Match Setup</h3>
+              
+              {/* Total Overs Selection */}
+              <div className="setup-section">
+                <label>Total Overs:</label>
+                <div className="overs-selection">
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={cricketMatchSetup.totalOvers}
+                    onChange={(e) => handleCricketOversChange(parseInt(e.target.value) || 20)}
+                    className="overs-input"
+                  />
+                  <div className="overs-presets">
+                    <button onClick={() => handleCricketOversChange(10)} className="preset-btn">10</button>
+                    <button onClick={() => handleCricketOversChange(20)} className="preset-btn">20</button>
+                    <button onClick={() => handleCricketOversChange(50)} className="preset-btn">50</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toss Winner */}
+              <div className="setup-section">
+                <label>Toss Winner:</label>
+                <div className="toss-selection">
+                  <button 
+                    onClick={() => handleTossWinner(currentMatch.team1)}
+                    className={`toss-btn ${cricketMatchSetup.tossWinner === currentMatch.team1 ? 'selected' : ''}`}
+                  >
+                    {currentMatch.team1}
+                  </button>
+                  <button 
+                    onClick={() => handleTossWinner(currentMatch.team2)}
+                    className={`toss-btn ${cricketMatchSetup.tossWinner === currentMatch.team2 ? 'selected' : ''}`}
+                  >
+                    {currentMatch.team2}
+                  </button>
+                </div>
+              </div>
+
+              {/* Toss Decision */}
+              {cricketMatchSetup.tossWinner && (
+                <div className="setup-section">
+                  <label>{cricketMatchSetup.tossWinner} decided to:</label>
+                  <div className="decision-selection">
+                    <button 
+                      onClick={() => handleTossDecision('bat')}
+                      className={`decision-btn ${cricketMatchSetup.tossDecision === 'bat' ? 'selected' : ''}`}
+                    >
+                      Bat First
+                    </button>
+                    <button 
+                      onClick={() => handleTossDecision('bowl')}
+                      className={`decision-btn ${cricketMatchSetup.tossDecision === 'bowl' ? 'selected' : ''}`}
+                    >
+                      Bowl First
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Start Match Button */}
+              {cricketMatchSetup.tossWinner && cricketMatchSetup.tossDecision && (
+                <button onClick={startCricketMatch} className="start-match-btn">
+                  Start Match
+                </button>
+              )}
             </div>
-            <div className="extras">
-              <div className="extras-breakdown">
-                <span>Wide: {cricketExtras.wide}</span>
-                <span>No Ball: {cricketExtras.noBall}</span>
-                <span>Bye: {cricketExtras.bye}</span>
-                <span>Leg Bye: {cricketExtras.legBye}</span>
+          ) : !cricketMatchState.isMatchStarted ? (
+            <div className="cricket-player-selection">
+              <h3>Select Opening Batsmen</h3>
+              
+              <div className="batsmen-selection">
+                <div className="batsman-select">
+                  <label>Batsman 1 (Striker):</label>
+                  <select 
+                    value={currentBatsman1.name}
+                    onChange={(e) => selectBatsman(e.target.value, 1)}
+                    className="player-select"
+                  >
+                    <option value="">Select Batsman 1</option>
+                    {cricketPlayers.availableBatsmen.map(player => (
+                      <option key={player} value={player}>{player}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="batsman-select">
+                  <label>Batsman 2 (Non-Striker):</label>
+                  <select 
+                    value={currentBatsman2.name}
+                    onChange={(e) => selectBatsman(e.target.value, 2)}
+                    className="player-select"
+                  >
+                    <option value="">Select Batsman 2</option>
+                    {cricketPlayers.availableBatsmen.filter(p => p !== currentBatsman1.name).map(player => (
+                      <option key={player} value={player}>{player}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="bowler-selection">
+                <label>Opening Bowler:</label>
+                <select 
+                  value={currentBowler.name}
+                  onChange={(e) => selectBowler(e.target.value)}
+                  className="player-select"
+                >
+                  <option value="">Select Bowler</option>
+                  {cricketPlayers.availableBowlers.map(player => (
+                    <option key={player} value={player}>{player}</option>
+                  ))}
+                </select>
+              </div>
+
+              {currentBatsman1.name && currentBatsman2.name && currentBowler.name && (
+                <button 
+                  onClick={() => setCricketMatchState(prev => ({...prev, isMatchStarted: true}))}
+                  className="start-innings-btn"
+                >
+                  Start Innings
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="cricket-live-scoring">
+              {/* Scoreboard */}
+              <div className="cricket-scoreboard">
+                <div className="score-display">
+                  <div className="team-name">{currentMatch.team1}</div>
+                  <div className="score">{cricketRuns} / {cricketWickets}</div>
+                  <div className="overs">{cricketOvers}.{cricketBalls} / {cricketMatchSetup.totalOvers}</div>
+                </div>
+                <div className="extras">
+                  <div className="extras-breakdown">
+                    <span>Wide: {cricketExtras.wide}</span>
+                    <span>No Ball: {cricketExtras.noBall}</span>
+                    <span>Bye: {cricketExtras.bye}</span>
+                    <span>Leg Bye: {cricketExtras.legBye}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Players */}
+              <div className="current-players">
+                <div className="batsmen-info">
+                  <h4>Batsmen</h4>
+                  <div className="batsman-card">
+                    <div className={`batsman ${currentBatsman1.isOnStrike ? 'on-strike' : ''}`}>
+                      <span className="batsman-name">{currentBatsman1.name}</span>
+                      <span className="batsman-stats">{currentBatsman1.runs} ({currentBatsman1.balls})</span>
+                      {currentBatsman1.isOnStrike && <span className="strike-indicator">*</span>}
+                    </div>
+                    <div className={`batsman ${currentBatsman2.isOnStrike ? 'on-strike' : ''}`}>
+                      <span className="batsman-name">{currentBatsman2.name}</span>
+                      <span className="batsman-stats">{currentBatsman2.runs} ({currentBatsman2.balls})</span>
+                      {currentBatsman2.isOnStrike && <span className="strike-indicator">*</span>}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bowler-info">
+                  <h4>Bowler</h4>
+                  <div className="bowler-card">
+                    <span className="bowler-name">{currentBowler.name}</span>
+                    <span className="bowler-stats">{currentBowler.overs}.{currentBowler.balls} - {currentBowler.runs} - {currentBowler.wickets}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scoring Controls */}
+              <div className="scoring-controls">
+                <div className="runs-scoring">
+                  <h3>Runs</h3>
+                  <div className="runs-buttons">
+                    <button onClick={() => handleCricketRun(1)} className="run-button">+1</button>
+                    <button onClick={() => handleCricketRun(2)} className="run-button">+2</button>
+                    <button onClick={() => handleCricketRun(3)} className="run-button">+3</button>
+                    <button onClick={() => handleCricketRun(4)} className="run-button boundary">+4</button>
+                    <button onClick={() => handleCricketRun(6)} className="run-button boundary">+6</button>
+                  </div>
+                </div>
+
+                <div className="wickets-scoring">
+                  <h3>Wickets</h3>
+                  <div className="wicket-options">
+                    <button onClick={() => handleWicketFall('Bowled')} className="wicket-button">Bowled</button>
+                    <button onClick={() => handleWicketFall('Caught')} className="wicket-button">Caught</button>
+                    <button onClick={() => handleWicketFall('LBW')} className="wicket-button">LBW</button>
+                    <button onClick={() => handleWicketFall('Run Out')} className="wicket-button">Run Out</button>
+                    <button onClick={() => handleWicketFall('Stumped')} className="wicket-button">Stumped</button>
+                  </div>
+                </div>
+
+                <div className="extras-scoring">
+                  <h3>Extras</h3>
+                  <div className="extras-buttons">
+                    <button onClick={() => handleCricketExtra('wide')} className="extra-button">Wide</button>
+                    <button onClick={() => handleCricketExtra('noBall')} className="extra-button">No Ball</button>
+                    <button onClick={() => handleCricketExtra('bye')} className="extra-button">Bye</button>
+                    <button onClick={() => handleCricketExtra('legBye')} className="extra-button">Leg Bye</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Over Complete - Next Bowler Selection */}
+              {cricketBalls === 0 && cricketOvers > 0 && (
+                <div className="next-bowler-selection">
+                  <h3>Over Complete - Select Next Bowler</h3>
+                  <select 
+                    value={currentBowler.name}
+                    onChange={(e) => selectBowler(e.target.value)}
+                    className="bowler-select"
+                  >
+                    <option value="">Select Next Bowler</option>
+                    {cricketPlayers.availableBowlers.map(player => (
+                      <option key={player} value={player}>{player}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Undo Button */}
+              <div className="undo-section">
+                <button onClick={undoLastBall} className="undo-button">Undo Last Ball</button>
               </div>
             </div>
-          </div>
-
-          {/* Runs Scoring */}
-          <div className="runs-scoring">
-            <h3>Runs</h3>
-            <div className="runs-buttons">
-              <button onClick={() => handleCricketRun(1)} className="run-button">+1</button>
-              <button onClick={() => handleCricketRun(2)} className="run-button">+2</button>
-              <button onClick={() => handleCricketRun(3)} className="run-button">+3</button>
-              <button onClick={() => handleCricketRun(4)} className="run-button boundary">+4</button>
-              <button onClick={() => handleCricketRun(6)} className="run-button boundary">+6</button>
-            </div>
-          </div>
-
-          {/* Wickets */}
-          <div className="wickets-scoring">
-            <h3>Wickets</h3>
-            <button onClick={handleCricketWicket} className="wicket-button">Wicket</button>
-          </div>
-
-          {/* Extras */}
-          <div className="extras-scoring">
-            <h3>Extras</h3>
-            <div className="extras-buttons">
-              <button onClick={() => handleCricketExtra('wide')} className="extra-button">Wide</button>
-              <button onClick={() => handleCricketExtra('noBall')} className="extra-button">No Ball</button>
-              <button onClick={() => handleCricketExtra('bye')} className="extra-button">Bye</button>
-              <button onClick={() => handleCricketExtra('legBye')} className="extra-button">Leg Bye</button>
-            </div>
-          </div>
-
-          {/* Current Players */}
-          <div className="current-players">
-            <div className="batsman-info">
-              <h4>Current Batsman</h4>
-              <div className="player-stats">
-                <span>{currentBatsman1.name}: {currentBatsman1.runs} off {currentBatsman1.balls}</span>
-              </div>
-            </div>
-            <div className="bowler-info">
-              <h4>Current Bowler</h4>
-              <div className="player-stats">
-                <span>{currentBowler.name}: {currentBowler.overs}.{currentBowler.balls} - {currentBowler.runs} - {currentBowler.wickets}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Undo Button */}
-          <div className="undo-section">
-            <button onClick={undoLastBall} className="undo-button">Undo Last Ball</button>
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -1582,10 +2012,141 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
             </div>
           </div>
 
+          {/* Game Setup */}
+          <div className="basketball-game-setup">
+            <h3>Game Setup</h3>
+            <div className="game-setup-controls">
+              <div className="setup-group">
+                <label>Total Quarters:</label>
+                <div className="quarters-selection">
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={basketballTotalQuarters}
+                    onChange={(e) => handleBasketballTotalQuartersChange(parseInt(e.target.value) || 4)}
+                    className="quarters-input"
+                    placeholder="Number of quarters"
+                  />
+                  <div className="quarters-presets">
+                    <button 
+                      onClick={() => handleBasketballTotalQuartersChange(2)}
+                      className="preset-button"
+                    >
+                      2 Quarters
+                    </button>
+                    <button 
+                      onClick={() => handleBasketballTotalQuartersChange(4)}
+                      className="preset-button"
+                    >
+                      4 Quarters
+                    </button>
+                    <button 
+                      onClick={() => handleBasketballTotalQuartersChange(6)}
+                      className="preset-button"
+                    >
+                      6 Quarters
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="setup-group">
+                <label>Quarter Duration (minutes):</label>
+                <div className="duration-input-group">
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={basketballQuarterDuration}
+                    onChange={(e) => handleBasketballQuarterDurationChange(parseInt(e.target.value) || 10)}
+                    className="duration-input"
+                    placeholder="Enter duration in minutes"
+                  />
+                  <div className="duration-presets">
+                    <button 
+                      onClick={() => handleBasketballQuarterDurationChange(8)}
+                      className="preset-button"
+                    >
+                      8 min
+                    </button>
+                    <button 
+                      onClick={() => handleBasketballQuarterDurationChange(10)}
+                      className="preset-button"
+                    >
+                      10 min
+                    </button>
+                    <button 
+                      onClick={() => handleBasketballQuarterDurationChange(12)}
+                      className="preset-button"
+                    >
+                      12 min
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Quarter and Time */}
           <div className="basketball-timer">
-            <div className="quarter">Quarter {basketballQuarter}</div>
+            <div className="quarter">Quarter {basketballQuarter} of {basketballTotalQuarters}</div>
             <div className="time">{Math.floor(basketballTime / 60)}:{(basketballTime % 60).toString().padStart(2, '0')}</div>
+            
+            {basketballGameCompleted ? (
+              <div className="game-completed">
+                <div className="game-result">
+                  <h3>Game Completed!</h3>
+                  <div className="final-score">
+                    <div className="winner">
+                      {basketballScore1 > basketballScore2 ? currentMatch.team1 : 
+                       basketballScore2 > basketballScore1 ? currentMatch.team2 : 'Tie'}
+                      {basketballScore1 === basketballScore2 ? ' (Tie)' : ' Wins!'}
+                    </div>
+                    <div className="final-scores">
+                      <span>{currentMatch.team1}: {basketballScore1}</span>
+                      <span> - </span>
+                      <span>{basketballScore2}: {currentMatch.team2}</span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={resetBasketballGame} 
+                  className="reset-game-button"
+                >
+                  New Game
+                </button>
+              </div>
+            ) : (
+              <div className="timer-controls">
+                <button 
+                  onClick={startBasketballTimer} 
+                  className="timer-button"
+                  disabled={basketballIsTimerRunning}
+                >
+                  Start
+                </button>
+                <button 
+                  onClick={pauseBasketballTimer} 
+                  className="timer-button"
+                  disabled={!basketballIsTimerRunning}
+                >
+                  Pause
+                </button>
+                <button 
+                  onClick={resetBasketballTimer} 
+                  className="timer-button"
+                >
+                  Reset
+                </button>
+                <button 
+                  onClick={nextBasketballQuarter} 
+                  className="timer-button"
+                  disabled={basketballQuarter >= basketballTotalQuarters}
+                >
+                  {basketballQuarter >= basketballTotalQuarters ? 'End Game' : 'Next Quarter'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Scoring Controls */}
@@ -1980,9 +2541,11 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {activeView === 'main' && renderMainView()}
           {activeView === 'create-tournament' && renderTournamentCreation()}
           {activeView === 'tournament' && selectedTournament && renderTournamentManagement()}
+          {activeView === 'tournament-matches' && renderTournamentMatches()}
           {activeView === 'quick-match' && renderQuickMatch()}
           {activeView === 'quick-match-live' && renderLiveScoring()}
           {activeView === 'tournament-live' && renderLiveScoring()}
+          {activeView === 'live-scoring' && renderLiveScoringDashboard()}
           {activeView === 'history' && renderHistory()}
         </div>
       </div>
