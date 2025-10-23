@@ -727,6 +727,861 @@
 }
 
 
+/* Football Scoring Styles */
+.football-scoring {
+  display: grid;
+  gap: 2rem;
+}
+
+.match-setup {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.duration-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.duration-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.duration-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 1rem;
+  width: 100%;
+  text-align: center;
+}
+
+.duration-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.duration-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.duration-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.preset-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.preset-button:hover {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.start-match-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.start-match-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.match-timer {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.timer-display {
+  margin-bottom: 1.5rem;
+}
+
+.phase-indicator {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.time-display {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  font-family: 'Courier New', monospace;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.timer-button {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.timer-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(118, 75, 162, 0.3);
+}
+
+.football-scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.football-scoreboard .team-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.football-scoreboard .team-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.football-scoreboard .score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+}
+
+.football-scoreboard .vs {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.goal-scoring {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.goal-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.team-goal-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.team-goal-controls h4 {
+  color: #667eea;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.player-select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 1rem;
+  min-width: 150px;
+}
+
+.goal-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.goal-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+}
+
+.goals-history {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.goal-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.goal-team {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.goal-player {
+  color: white;
+}
+
+.goal-minute {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.goal-time {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+/* Cricket Scoring Styles */
+.cricket-scoring {
+  display: grid;
+  gap: 2rem;
+}
+
+.cricket-scoreboard {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.cricket-scoreboard .score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cricket-scoreboard .team-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.cricket-scoreboard .score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+}
+
+.cricket-scoreboard .overs {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.extras-breakdown {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.extras-breakdown span {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.runs-scoring, .wickets-scoring, .extras-scoring {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.runs-buttons, .extras-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.run-button, .extra-button, .wicket-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.run-button.boundary {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.wicket-button {
+  background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+}
+
+.run-button:hover, .extra-button:hover, .wicket-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.current-players {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.player-stats {
+  font-size: 1.1rem;
+  color: white;
+  margin-top: 0.5rem;
+}
+
+.undo-section {
+  text-align: center;
+}
+
+.undo-button {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.undo-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+}
+
+/* Basketball Scoring Styles */
+.basketball-scoring {
+  display: grid;
+  gap: 2rem;
+}
+
+.basketball-scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.basketball-scoreboard .team-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.basketball-scoreboard .team-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.basketball-scoreboard .score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+}
+
+.basketball-scoreboard .fouls {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.basketball-timer {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.basketball-timer .quarter {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.basketball-timer .time {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  font-family: 'Courier New', monospace;
+}
+
+.basketball-scoring-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.team-controls {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.team-controls h4 {
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.scoring-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.score-button, .foul-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.foul-button {
+  background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+}
+
+.score-button:hover, .foul-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+/* Chess Scoring Styles */
+.chess-scoring {
+  display: grid;
+  gap: 2rem;
+}
+
+.chess-scoreboard {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.match-score {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.chess-clocks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.clock {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.clock.active {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.clock .player-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.clock .time {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  font-family: 'Courier New', monospace;
+}
+
+.chess-controls {
+  text-align: center;
+}
+
+.move-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.move-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.chess-results {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chess-results h3 {
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.result-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.result-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.result-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+}
+
+/* Volleyball Scoring Styles */
+.volleyball-scoring {
+  display: grid;
+  gap: 2rem;
+}
+
+.volleyball-scoreboard {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.current-set {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.set-info {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.serving-indicator {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.volleyball-scoreboard .score-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.volleyball-scoreboard .team-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.volleyball-scoreboard .team-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.volleyball-scoreboard .current-score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+}
+
+.volleyball-scoreboard .sets-won {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.volleyball-scoring-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.team-controls {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.team-controls h4 {
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.point-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.point-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+/* Badminton Scoring Styles */
+.badminton-scoring {
+  display: grid;
+  gap: 2rem;
+}
+
+.badminton-scoreboard {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.current-game {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.game-info {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.badminton-scoreboard .score-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.badminton-scoreboard .player-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badminton-scoreboard .player-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.badminton-scoreboard .current-score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+}
+
+.badminton-scoreboard .games-won {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.badminton-scoring-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.player-controls {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.player-controls h4 {
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Table Tennis Scoring Styles */
+.table-tennis-scoring {
+  display: grid;
+  gap: 2rem;
+}
+
+.table-tennis-scoreboard {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.table-tennis-scoreboard .score-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.table-tennis-scoreboard .player-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.table-tennis-scoreboard .player-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.table-tennis-scoreboard .current-score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+}
+
+.table-tennis-scoreboard .games-won {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.table-tennis-scoring-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
 /* Tournament Matches Styles */
 .matches-grid {
   display: grid;
@@ -1012,6 +1867,159 @@
 
   .history-tabs {
     flex-wrap: wrap;
+  }
+
+  .goal-controls {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .football-scoreboard {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .goal-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .timer-controls {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .timer-button {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .duration-input-group {
+    max-width: 100%;
+  }
+
+  .duration-presets {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .preset-button {
+    width: 100%;
+    padding: 0.6rem;
+  }
+
+  /* Cricket Mobile Styles */
+  .cricket-scoreboard .score {
+    font-size: 2rem;
+  }
+
+  .runs-buttons, .extras-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .run-button, .extra-button, .wicket-button {
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  .current-players {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Basketball Mobile Styles */
+  .basketball-scoreboard {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .basketball-scoreboard .score {
+    font-size: 2rem;
+  }
+
+  .basketball-scoring-controls {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .scoring-buttons {
+    gap: 0.5rem;
+  }
+
+  .score-button, .foul-button {
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  /* Chess Mobile Styles */
+  .chess-clocks {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .clock .time {
+    font-size: 2rem;
+  }
+
+  .result-buttons {
+    gap: 0.5rem;
+  }
+
+  .result-button {
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  /* Volleyball Mobile Styles */
+  .volleyball-scoreboard .score-display {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .volleyball-scoreboard .current-score {
+    font-size: 2rem;
+  }
+
+  .volleyball-scoring-controls {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .point-button {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Badminton Mobile Styles */
+  .badminton-scoreboard .score-display {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .badminton-scoreboard .current-score {
+    font-size: 2rem;
+  }
+
+  .badminton-scoring-controls {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Table Tennis Mobile Styles */
+  .table-tennis-scoreboard .score-display {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .table-tennis-scoreboard .current-score {
+    font-size: 2rem;
+  }
+
+  .table-tennis-scoring-controls {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
   .history-tab {
