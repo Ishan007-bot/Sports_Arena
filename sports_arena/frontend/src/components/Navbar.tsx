@@ -21,16 +21,7 @@ const Navbar: React.FC = () => {
   };
 
   const handleLiveScoresClick = () => {
-    if (location.pathname === '/') {
-      // If on home page, scroll to live scores section
-      const liveScoresSection = document.getElementById('livescores');
-      if (liveScoresSection) {
-        liveScoresSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      // Navigate to home page and scroll to live scores
-      navigate('/#livescores');
-    }
+    navigate('/live-scores');
   };
 
   return (
