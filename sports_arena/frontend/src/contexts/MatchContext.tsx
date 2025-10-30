@@ -48,6 +48,7 @@ interface MatchContextType {
   addMatch: (match: Match) => void;
   updateMatch: (matchId: string, updates: Partial<Match>) => void;
   setMatchStatus: (matchId: string, status: Match['status']) => void;
+  deleteMatch: (matchId: string) => void;
 }
 
 const MatchContext = createContext<MatchContextType | undefined>(undefined);
@@ -86,6 +87,10 @@ export const MatchProvider: React.FC<MatchProviderProps> = ({ children }) => {
 
   const setMatchStatus = (matchId: string, status: Match['status']) => {
     updateMatch(matchId, { status });
+  };
+
+  const deleteMatch = (matchId: string) => {
+    setAllMatches(prev => prev.filter(match => match.id !== matchId));
   };
 
   // Listen for real-time match updates
@@ -167,7 +172,8 @@ export const MatchProvider: React.FC<MatchProviderProps> = ({ children }) => {
     allMatches,
     addMatch,
     updateMatch,
-    setMatchStatus
+    setMatchStatus,
+    deleteMatch
   };
 
   return (
