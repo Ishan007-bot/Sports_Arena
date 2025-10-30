@@ -24,6 +24,10 @@ const Navbar: React.FC = () => {
     navigate('/live-scores');
   };
 
+  const handleHistoryClick = () => {
+    navigate('/history');
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
@@ -37,7 +41,7 @@ const Navbar: React.FC = () => {
           <button className="nav-link" onClick={handleHomeClick}>Home</button>
           <button className="nav-link" onClick={handleSportsClick}>Sports</button>
           <button className="nav-link" onClick={handleLiveScoresClick}>Live Scores</button>
-          <button className="nav-link" onClick={handleHomeClick}>History</button>
+          <button className="nav-link" onClick={handleHistoryClick}>History</button>
           <button className="nav-link admin-link" onClick={handleHomeClick}>Admin Login</button>
         </div>
         

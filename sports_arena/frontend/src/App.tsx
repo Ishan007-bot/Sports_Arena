@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import SportsPage from './components/SportsPage';
 import LiveScoresPage from './components/LiveScoresPage';
+import HistoryPage from './components/HistoryPage';
 import Arena from './components/Arena';
 import { SocketProvider } from './contexts/SocketContext';
 import { MatchProvider } from './contexts/MatchContext';
@@ -20,6 +21,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/sports" element={<SportsPage />} />
               <Route path="/live-scores" element={<LiveScoresPage />} />
+              <Route path="/history" element={<HistoryPage />} />
               <Route path="/cricket" element={<Arena sport="Cricket" />} />
               <Route path="/football" element={<Arena sport="Football" />} />
               <Route path="/table-tennis" element={<Arena sport="Table Tennis" />} />
