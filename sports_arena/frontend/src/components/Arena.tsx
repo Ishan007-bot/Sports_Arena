@@ -24,11 +24,12 @@ interface Tournament {
 interface Match {
   id: string;
   tournamentId: string;
-  team1: string;
-  team2: string;
+  team1: Team;
+  team2: Team;
   score1: number;
   score2: number;
   status: 'upcoming' | 'live' | 'finished' | 'completed';
+  sport: string;
   startTime?: string;
   endTime?: string;
 }
@@ -166,21 +167,26 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('Loading data from backend...');
+        
         // Load tournaments
         const tournamentsData = await tournamentAPI.getAll();
-        setTournaments(tournamentsData);
+        console.log('Tournaments loaded:', tournamentsData);
+        setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         
         // Load matches
         const matchesData = await matchAPI.getAll();
-        setAllMatches(matchesData);
+        console.log('Matches loaded:', matchesData);
+        const matchesArray = Array.isArray(matchesData) ? matchesData : [];
+        setAllMatches(matchesArray);
         
         // Add matches to global context
-        matchesData.forEach((match: Match) => addMatch(match));
+        matchesArray.forEach((match: Match) => addMatch(match));
         
-        console.log('Data loaded from backend:', { tournaments: tournamentsData, matches: matchesData });
+        console.log('Data loaded successfully from backend');
       } catch (error) {
         console.error('Error loading data from backend:', error);
-        // Continue with empty data if backend is not available
+        alert('Failed to load data from backend. Please check if the server is running.');
       }
     };
     
@@ -190,6 +196,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
   const handleTournamentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('Creating tournament...');
       const newTournament = {
         name: tournamentForm.name,
         sport: sport,
@@ -199,16 +206,22 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         teams: []
       };
       
+      console.log('Tournament data:', newTournament);
+      
       // Save to backend
       const savedTournament = await tournamentAPI.create(newTournament);
+      console.log('Tournament saved to backend:', savedTournament);
       
       // Update local state
-      setTournaments([...tournaments, savedTournament]);
+      const tournamentWithTeams = { ...savedTournament, teams: savedTournament.teams || [] };
+      setTournaments([...tournaments, tournamentWithTeams]);
       setTournamentForm({ name: '', startDate: '', endDate: '', description: '' });
+      setTeams([]); // Initialize teams array for the tournament
       setActiveView('tournament');
-      setSelectedTournament(savedTournament);
+      setSelectedTournament(tournamentWithTeams);
       
-      console.log('Tournament saved successfully:', savedTournament);
+      console.log('Tournament created successfully!');
+      alert('Tournament created successfully!');
     } catch (error) {
       console.error('Error creating tournament:', error);
       alert('Failed to create tournament. Please try again.');
@@ -282,13 +295,19 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         const savedMatch = await matchAPI.create(matchData);
         
         // Update local state
-        setAllMatches([...allMatches, savedMatch]);
+        setAllMatches([...(Array.isArray(allMatches) ? allMatches : []), savedMatch]);
         setCurrentMatch(savedMatch);
         setLiveScore1(0);
         setLiveScore2(0);
         
         // Add to global match context
         addMatch(savedMatch);
+        
+        // Join match room for real-time updates
+        if (isConnected) {
+          joinMatch(savedMatch.id);
+          console.log('Joined match room for real-time updates:', savedMatch.id);
+        }
         
         console.log('Match saved successfully:', savedMatch);
       } catch (error) {
@@ -306,7 +325,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         
         // Update local state
         const updatedMatch = { ...currentMatch, status: 'finished' as const, endTime: new Date().toISOString() };
-        setAllMatches(allMatches.map(match => 
+        setAllMatches((Array.isArray(allMatches) ? allMatches : []).map(match => 
           match.id === currentMatch.id ? updatedMatch : match
         ));
         
@@ -418,19 +437,55 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
       minute: Math.max(1, minute)
     };
     
-    setGoals([...goals, newGoal]);
+    const newGoals = [...goals, newGoal];
+    setGoals(newGoals);
     
     // Update score
+    let newScore1 = liveScore1;
+    let newScore2 = liveScore2;
+    
     if (team === 'team1') {
-      setLiveScore1(liveScore1 + 1);
-      if (currentMatch) {
-        setCurrentMatch({ ...currentMatch, score1: liveScore1 + 1 });
-      }
+      newScore1 = liveScore1 + 1;
+      setLiveScore1(newScore1);
     } else {
-      setLiveScore2(liveScore2 + 1);
-      if (currentMatch) {
-        setCurrentMatch({ ...currentMatch, score2: liveScore2 + 1 });
-      }
+      newScore2 = liveScore2 + 1;
+      setLiveScore2(newScore2);
+    }
+    
+    // Update global match state
+    if (currentMatch) {
+      updateMatch(currentMatch.id, {
+        score1: newScore1,
+        score2: newScore2,
+        football: {
+          timeRemaining: timeRemaining,
+          isTimerRunning: isTimerRunning,
+          phase: matchPhase,
+          goals: newGoals
+        }
+      });
+    }
+    
+    // Emit real-time update
+    if (currentMatch && isConnected) {
+      console.log('Emitting football goal update:', {
+        matchId: currentMatch.id,
+        score1: newScore1,
+        score2: newScore2
+      });
+      
+      emitFootballScoreUpdate({
+        matchId: currentMatch.id,
+        action: 'goal',
+        scoringData: {
+          score1: newScore1,
+          score2: newScore2,
+          timeRemaining: timeRemaining,
+          isTimerRunning: isTimerRunning,
+          phase: matchPhase,
+          goals: newGoals
+        }
+      });
     }
   };
 
@@ -538,8 +593,8 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
   const initializeCricketPlayers = () => {
     if (currentMatch && currentMatch.team1 && currentMatch.team2) {
       // Get team members from the match teams
-      const team1Members = teams.find(t => t.name === currentMatch.team1)?.members || [];
-      const team2Members = teams.find(t => t.name === currentMatch.team2)?.members || [];
+      const team1Members = currentMatch.team1.members || [];
+      const team2Members = currentMatch.team2.members || [];
       
       setCricketPlayers({
         battingTeam: team1Members.map(member => ({name: member, runs: 0, balls: 0, isOut: false, howOut: ''})),
@@ -688,23 +743,49 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
 
   // Basketball scoring functions
   const handleBasketballScore = (team: 'team1' | 'team2', points: number) => {
+    let newScore1 = basketballScore1;
+    let newScore2 = basketballScore2;
+    
     if (team === 'team1') {
-      setBasketballScore1(prev => prev + points);
+      newScore1 = basketballScore1 + points;
+      setBasketballScore1(newScore1);
     } else {
-      setBasketballScore2(prev => prev + points);
+      newScore2 = basketballScore2 + points;
+      setBasketballScore2(newScore2);
+    }
+    
+    // Update global match state
+    if (currentMatch) {
+      updateMatch(currentMatch.id, {
+        score1: newScore1,
+        score2: newScore2,
+        basketball: {
+          quarter: basketballQuarter,
+          timeRemaining: basketballTime,
+          isTimerRunning: basketballIsTimerRunning,
+          totalQuarters: basketballTotalQuarters
+        }
+      });
     }
     
     // Emit real-time update
     if (currentMatch && isConnected) {
+      console.log('Emitting basketball score update:', {
+        matchId: currentMatch.id,
+        score1: newScore1,
+        score2: newScore2
+      });
+      
       emitBasketballScoreUpdate({
         matchId: currentMatch.id,
         action: 'score',
         scoringData: {
-          score1: team === 'team1' ? basketballScore1 + points : basketballScore1,
-          score2: team === 'team2' ? basketballScore2 + points : basketballScore2,
+          score1: newScore1,
+          score2: newScore2,
           quarter: basketballQuarter,
           timeRemaining: basketballTime,
-          isTimerRunning: basketballIsTimerRunning
+          isTimerRunning: basketballIsTimerRunning,
+          totalQuarters: basketballTotalQuarters
         }
       });
     }
@@ -938,62 +1019,121 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     });
   };
 
-  const handleStartQuickMatch = () => {
+  const handleStartQuickMatch = async () => {
     if (selectedTeam1 && selectedTeam2) {
-      // Create teams if they don't exist
-      const team1 = teams.find(t => t.name === selectedTeam1) || {
-        id: Date.now().toString(),
-        name: selectedTeam1,
-        members: ['Player 1']
-      };
-      const team2 = teams.find(t => t.name === selectedTeam2) || {
-        id: (Date.now() + 1).toString(),
-        name: selectedTeam2,
-        members: ['Player 1']
-      };
+      try {
+        console.log('Starting quick match...');
+        
+        // Create teams if they don't exist
+        const team1 = teams.find(t => t.name === selectedTeam1) || {
+          id: Date.now().toString(),
+          name: selectedTeam1,
+          members: ['Player 1']
+        };
+        const team2 = teams.find(t => t.name === selectedTeam2) || {
+          id: (Date.now() + 1).toString(),
+          name: selectedTeam2,
+          members: ['Player 1']
+        };
 
-      // Add teams to the teams list if they don't exist
-      if (!teams.find(t => t.name === selectedTeam1)) {
-        setTeams([...teams, team1]);
-      }
-      if (!teams.find(t => t.name === selectedTeam2)) {
-        setTeams([...teams, team2]);
-      }
+        // Add teams to the teams list if they don't exist
+        if (!teams.find(t => t.name === selectedTeam1)) {
+          setTeams([...teams, team1]);
+        }
+        if (!teams.find(t => t.name === selectedTeam2)) {
+          setTeams([...teams, team2]);
+        }
 
-      const newMatch: Match = {
-        id: Date.now().toString(),
-        tournamentId: '',
-        team1: selectedTeam1,
-        team2: selectedTeam2,
-        score1: 0,
-        score2: 0,
-        status: 'live',
-        startTime: new Date().toISOString()
-      };
-      setQuickMatches([...quickMatches, newMatch]);
-      setAllMatches([...allMatches, newMatch]);
-      setCurrentMatch(newMatch);
-      setLiveScore1(0);
-      setLiveScore2(0);
-      setActiveView('quick-match-live');
+        const newMatch: Match = {
+          id: Date.now().toString(),
+          tournamentId: '',
+          team1: team1,
+          team2: team2,
+          score1: 0,
+          score2: 0,
+          status: 'live',
+          sport: sport,
+          startTime: new Date().toISOString()
+        };
+        
+        console.log('Saving match to backend:', newMatch);
+        
+        // Save match to backend
+        const savedMatch = await matchAPI.create(newMatch);
+        console.log('Match saved to backend:', savedMatch);
+        
+        // Update local state
+        setQuickMatches([...(Array.isArray(quickMatches) ? quickMatches : []), savedMatch]);
+        setAllMatches([...(Array.isArray(allMatches) ? allMatches : []), savedMatch]);
+        setCurrentMatch(savedMatch);
+        addMatch(savedMatch); // Add to global context
+        
+        // Join match room for real-time updates
+        if (isConnected) {
+          joinMatch(savedMatch.id);
+          console.log('Joined quick match room for real-time updates:', savedMatch.id);
+        }
+        
+        setLiveScore1(0);
+        setLiveScore2(0);
+        setActiveView('quick-match-live');
+        
+        console.log('Quick match started successfully!');
+      } catch (error) {
+        console.error('Error starting quick match:', error);
+        alert('Failed to start match. Please try again.');
+      }
     }
   };
 
-  const handleCreateTournamentMatch = () => {
+  const handleCreateTournamentMatch = async () => {
     if (selectedTournament && selectedTeam1 && selectedTeam2) {
-      const newMatch: Match = {
-        id: Date.now().toString(),
-        tournamentId: selectedTournament.id,
-        team1: selectedTeam1,
-        team2: selectedTeam2,
-        score1: 0,
-        score2: 0,
-        status: 'upcoming',
-        startTime: new Date().toISOString()
-      };
-      setAllMatches([...allMatches, newMatch]);
-      setSelectedTeam1('');
-      setSelectedTeam2('');
+      try {
+        console.log('Creating tournament match...');
+        
+        // Find team objects
+        const team1 = selectedTournament.teams?.find(t => t.name === selectedTeam1) || {
+          id: Date.now().toString(),
+          name: selectedTeam1,
+          members: ['Player 1']
+        };
+        const team2 = selectedTournament.teams?.find(t => t.name === selectedTeam2) || {
+          id: (Date.now() + 1).toString(),
+          name: selectedTeam2,
+          members: ['Player 1']
+        };
+        
+        const newMatch: Match = {
+          id: Date.now().toString(),
+          tournamentId: selectedTournament.id,
+          team1: team1,
+          team2: team2,
+          score1: 0,
+          score2: 0,
+          status: 'upcoming',
+          sport: selectedTournament.sport,
+          startTime: new Date().toISOString()
+        };
+        
+        console.log('Saving tournament match to backend:', newMatch);
+        
+        // Save match to backend
+        const savedMatch = await matchAPI.create(newMatch);
+        console.log('Tournament match saved to backend:', savedMatch);
+        
+        // Update local state
+        setAllMatches([...(Array.isArray(allMatches) ? allMatches : []), savedMatch]);
+        addMatch(savedMatch); // Add to global context
+        
+        setSelectedTeam1('');
+        setSelectedTeam2('');
+        
+        console.log('Tournament match created successfully!');
+        alert('Tournament match created successfully!');
+      } catch (error) {
+        console.error('Error creating tournament match:', error);
+        alert('Failed to create match. Please try again.');
+      }
     }
   };
 
@@ -1081,7 +1221,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           className={`tab-button ${activeView === 'tournament' ? 'active' : ''}`}
           onClick={() => setActiveView('tournament')}
         >
-          Teams ({selectedTournament?.teams.length || 0})
+          Teams ({selectedTournament?.teams?.length || 0})
         </button>
         <button 
           className={`tab-button ${activeView === 'tournament-matches' ? 'active' : ''}`}
@@ -1226,13 +1366,13 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                     />
                   </div>];
                 }
-                return team1?.members.map((member, index) => (
+                return (team1?.members || []).map((member, index) => (
                   <div key={index} className="member-item">
                     <input
                       type="text"
                       className="member-input"
                       value={member}
-                      onChange={(e) => handleMemberChange(team1.id, index, e.target.value)}
+                      onChange={(e) => handleMemberChange(team1?.id || '', index, e.target.value)}
                       placeholder={`Player ${index + 1} Name`}
                     />
                   </div>
@@ -1288,13 +1428,13 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                     />
                   </div>];
                 }
-                return team2?.members.map((member, index) => (
+                return (team2?.members || []).map((member, index) => (
                   <div key={index} className="member-item">
                     <input
                       type="text"
                       className="member-input"
                       value={member}
-                      onChange={(e) => handleMemberChange(team2.id, index, e.target.value)}
+                      onChange={(e) => handleMemberChange(team2?.id || '', index, e.target.value)}
                       placeholder={`Player ${index + 1} Name`}
                     />
                   </div>
@@ -1361,7 +1501,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                   onChange={(e) => setSelectedTeam1(e.target.value)}
                 >
                   <option value="">Choose Team 1</option>
-                  {selectedTournament?.teams.map(team => (
+                  {(selectedTournament?.teams || []).map(team => (
                     <option key={team.id} value={team.name}>
                       {team.name}
                     </option>
@@ -1376,7 +1516,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                   onChange={(e) => setSelectedTeam2(e.target.value)}
                 >
                   <option value="">Choose Team 2</option>
-                  {selectedTournament?.teams.map(team => (
+                  {(selectedTournament?.teams || []).map(team => (
                     <option key={team.id} value={team.name}>
                       {team.name}
                     </option>
@@ -1403,9 +1543,9 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
             .map(match => (
               <div key={match.id} className="match-card">
                 <div className="match-info">
-                  <span className="team-name">{match.team1}</span>
+                  <span className="team-name">{match.team1.name}</span>
                   <span className="vs">VS</span>
-                  <span className="team-name">{match.team2}</span>
+                  <span className="team-name">{match.team2.name}</span>
                 </div>
                 <div className="match-score">
                   <span>{match.score1} - {match.score2}</span>
@@ -1429,14 +1569,16 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     </div>
   );
 
-  const renderTeamRegistration = () => (
-    <div className="content-section">
-      <h2 className="section-title">
-        <span className="section-icon">👥</span>
-        Team Registration
-      </h2>
-      <div className="team-registration">
-        {teams.map(team => (
+  const renderTeamRegistration = () => {
+    const safeTeams = teams || [];
+    return (
+      <div className="content-section">
+        <h2 className="section-title">
+          <span className="section-icon">👥</span>
+          Team Registration
+        </h2>
+        <div className="team-registration">
+          {safeTeams.map(team => (
           <div key={team.id} className="team-form">
             <div className="team-header">
               <h3 className="team-name">{team.name}</h3>
@@ -1448,7 +1590,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               </button>
             </div>
             <div className="member-list">
-              {team.members.map((member, index) => (
+              {(team.members || []).map((member, index) => (
                 <div key={index} className="member-item">
                   <input
                     type="text"
@@ -1480,7 +1622,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
             />
           </div>
           <div className="member-list">
-            {newTeam.members.map((member, index) => (
+            {(newTeam.members || []).map((member, index) => (
               <div key={index} className="member-item">
                 <input
                   type="text"
@@ -1507,7 +1649,8 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderMatchManagement = () => (
     <div className="content-section">
@@ -1528,7 +1671,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               }}
             >
               <option value="">Choose a tournament</option>
-              {tournaments.map(tournament => (
+              {(tournaments || []).map(tournament => (
                 <option key={tournament.id} value={tournament.id}>
                   {tournament.name}
                 </option>
@@ -1544,7 +1687,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                 onChange={(e) => setSelectedTeam1(e.target.value)}
               >
                 <option value="">Choose Team 1</option>
-                {teams.map(team => (
+                {(teams || []).map(team => (
                   <option key={team.id} value={team.name}>
                     {team.name}
                   </option>
@@ -1559,7 +1702,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                 onChange={(e) => setSelectedTeam2(e.target.value)}
               >
                 <option value="">Choose Team 2</option>
-                {teams.map(team => (
+                {(teams || []).map(team => (
                   <option key={team.id} value={team.name}>
                     {team.name}
                   </option>
@@ -1613,9 +1756,9 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                 <div key={match.id} className="live-match-card">
                   <div className="match-header">
                     <div className="match-teams">
-                      <span className="team-name">{match.team1}</span>
+                      <span className="team-name">{match.team1.name}</span>
                       <span className="vs">VS</span>
-                      <span className="team-name">{match.team2}</span>
+                      <span className="team-name">{match.team2.name}</span>
                     </div>
                     <div className="match-sport">
                       <span className="sport-badge">{sport}</span>
@@ -1688,17 +1831,17 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         {currentMatch ? (
           <div className="scoring-board">
             <div className="match-info">
-              <h3 className="match-title">{currentMatch.team1} vs {currentMatch.team2}</h3>
+              <h3 className="match-title">{currentMatch.team1.name} vs {currentMatch.team2.name}</h3>
               <p className="match-status">Status: Live</p>
             </div>
             <div className="score-display">
               <div className="team-score">
-                <div className="team-name">{currentMatch.team1}</div>
+                <div className="team-name">{currentMatch.team1.name}</div>
                 <div className="score-value">{liveScore1}</div>
               </div>
               <div className="vs-text">VS</div>
               <div className="team-score">
-                <div className="team-name">{currentMatch.team2}</div>
+                <div className="team-name">{currentMatch.team2.name}</div>
                 <div className="score-value">{liveScore2}</div>
               </div>
             </div>
@@ -1709,37 +1852,37 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                   onClick={() => handleScoreUpdate('team1', 1)}
                   className="scoring-button"
                 >
-                  {currentMatch.team1} +1
+                  {currentMatch.team1.name} +1
                 </button>
                 <button 
                   onClick={() => handleScoreUpdate('team1', 2)}
                   className="scoring-button"
                 >
-                  {currentMatch.team1} +2
+                  {currentMatch.team1.name} +2
                 </button>
                 <button 
                   onClick={() => handleScoreUpdate('team1', 3)}
                   className="scoring-button"
                 >
-                  {currentMatch.team1} +3
+                  {currentMatch.team1.name} +3
                 </button>
                 <button 
                   onClick={() => handleScoreUpdate('team2', 1)}
                   className="scoring-button"
                 >
-                  {currentMatch.team2} +1
+                  {currentMatch.team2.name} +1
                 </button>
                 <button 
                   onClick={() => handleScoreUpdate('team2', 2)}
                   className="scoring-button"
                 >
-                  {currentMatch.team2} +2
+                  {currentMatch.team2.name} +2
                 </button>
                 <button 
                   onClick={() => handleScoreUpdate('team2', 3)}
                   className="scoring-button"
                 >
-                  {currentMatch.team2} +3
+                  {currentMatch.team2.name} +3
                 </button>
               </div>
             </div>
@@ -1879,12 +2022,12 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {/* Score Display */}
           <div className="football-scoreboard">
             <div className="team-score">
-              <span className="team-name">{currentMatch.team1}</span>
+              <span className="team-name">{currentMatch.team1.name}</span>
               <span className="score">{liveScore1}</span>
             </div>
             <span className="vs">VS</span>
             <div className="team-score">
-              <span className="team-name">{currentMatch.team2}</span>
+              <span className="team-name">{currentMatch.team2.name}</span>
               <span className="score">{liveScore2}</span>
             </div>
           </div>
@@ -1895,9 +2038,9 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               <h3>Record Goal</h3>
               <div className="goal-controls">
                 <div className="team-goal-controls">
-                  <h4>{currentMatch.team1}</h4>
+                  <h4>{currentMatch.team1.name}</h4>
                   <select className="player-select" id="team1-player">
-                    {teams.find(t => t.name === currentMatch.team1)?.members.map((player, index) => (
+                    {(currentMatch.team1.members || []).map((player, index) => (
                       <option key={index} value={player}>{player}</option>
                     ))}
                   </select>
@@ -1913,9 +2056,9 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                 </div>
                 
                 <div className="team-goal-controls">
-                  <h4>{currentMatch.team2}</h4>
+                  <h4>{currentMatch.team2.name}</h4>
                   <select className="player-select" id="team2-player">
-                    {teams.find(t => t.name === currentMatch.team2)?.members.map((player, index) => (
+                    {(currentMatch.team2.members || []).map((player, index) => (
                       <option key={index} value={player}>{player}</option>
                     ))}
                   </select>
@@ -1940,7 +2083,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               <div className="goals-list">
                 {goals.map((goal) => (
                   <div key={goal.id} className="goal-item">
-                    <span className="goal-team">{goal.team === 'team1' ? currentMatch.team1 : currentMatch.team2}</span>
+                    <span className="goal-team">{goal.team === 'team1' ? currentMatch.team1.name : currentMatch.team2.name}</span>
                     <span className="goal-player">{goal.player}</span>
                     <span className="goal-minute">{goal.minute}'</span>
                     <span className="goal-time">{goal.timestamp}</span>
@@ -2002,16 +2145,16 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                 <label>Toss Winner:</label>
                 <div className="toss-selection">
                   <button 
-                    onClick={() => handleTossWinner(currentMatch.team1)}
-                    className={`toss-btn ${cricketMatchSetup.tossWinner === currentMatch.team1 ? 'selected' : ''}`}
+                    onClick={() => handleTossWinner(currentMatch.team1.name)}
+                    className={`toss-btn ${cricketMatchSetup.tossWinner === currentMatch.team1.name ? 'selected' : ''}`}
                   >
-                    {currentMatch.team1}
+                    {currentMatch.team1.name}
                   </button>
                   <button 
-                    onClick={() => handleTossWinner(currentMatch.team2)}
-                    className={`toss-btn ${cricketMatchSetup.tossWinner === currentMatch.team2 ? 'selected' : ''}`}
+                    onClick={() => handleTossWinner(currentMatch.team2.name)}
+                    className={`toss-btn ${cricketMatchSetup.tossWinner === currentMatch.team2.name ? 'selected' : ''}`}
                   >
-                    {currentMatch.team2}
+                    {currentMatch.team2.name}
                   </button>
                 </div>
               </div>
@@ -2106,7 +2249,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               {/* Scoreboard */}
               <div className="cricket-scoreboard">
                 <div className="score-display">
-                  <div className="team-name">{currentMatch.team1}</div>
+                  <div className="team-name">{currentMatch.team1.name}</div>
                   <div className="score">{cricketRuns} / {cricketWickets}</div>
                   <div className="overs">{cricketOvers}.{cricketBalls} / {cricketMatchSetup.totalOvers}</div>
                 </div>
@@ -2232,13 +2375,13 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {/* Scoreboard */}
           <div className="basketball-scoreboard">
             <div className="team-score">
-              <div className="team-name">{currentMatch.team1}</div>
+                  <div className="team-name">{currentMatch.team1.name}</div>
               <div className="score">{basketballScore1}</div>
               <div className="fouls">Fouls: {basketballFouls1}</div>
             </div>
             <div className="vs">VS</div>
             <div className="team-score">
-              <div className="team-name">{currentMatch.team2}</div>
+                  <div className="team-name">{currentMatch.team2.name}</div>
               <div className="score">{basketballScore2}</div>
               <div className="fouls">Fouls: {basketballFouls2}</div>
             </div>
@@ -2330,14 +2473,14 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
                   <h3>Game Completed!</h3>
                   <div className="final-score">
                     <div className="winner">
-                      {basketballScore1 > basketballScore2 ? currentMatch.team1 : 
-                       basketballScore2 > basketballScore1 ? currentMatch.team2 : 'Tie'}
+                       {basketballScore1 > basketballScore2 ? currentMatch.team1.name : 
+                        basketballScore2 > basketballScore1 ? currentMatch.team2.name : 'Tie'}
                       {basketballScore1 === basketballScore2 ? ' (Tie)' : ' Wins!'}
                     </div>
                     <div className="final-scores">
-                      <span>{currentMatch.team1}: {basketballScore1}</span>
+                      <span>{currentMatch.team1.name}: {basketballScore1}</span>
                       <span> - </span>
-                      <span>{basketballScore2}: {currentMatch.team2}</span>
+                      <span>{basketballScore2}: {currentMatch.team2.name}</span>
                     </div>
                   </div>
                 </div>
@@ -2384,7 +2527,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {/* Scoring Controls */}
           <div className="basketball-scoring-controls">
             <div className="team-controls">
-              <h4>{currentMatch.team1}</h4>
+              <h4>{currentMatch.team1.name}</h4>
               <div className="scoring-buttons">
                 <button onClick={() => handleBasketballScore('team1', 1)} className="score-button">+1 (Free Throw)</button>
                 <button onClick={() => handleBasketballScore('team1', 2)} className="score-button">+2 (Field Goal)</button>
@@ -2393,7 +2536,7 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               </div>
             </div>
             <div className="team-controls">
-              <h4>{currentMatch.team2}</h4>
+              <h4>{currentMatch.team2.name}</h4>
               <div className="scoring-buttons">
                 <button onClick={() => handleBasketballScore('team2', 1)} className="score-button">+1 (Free Throw)</button>
                 <button onClick={() => handleBasketballScore('team2', 2)} className="score-button">+2 (Field Goal)</button>
@@ -2429,20 +2572,20 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {/* Scoreboard */}
           <div className="chess-scoreboard">
             <div className="match-score">
-              <span>{currentMatch.team1}: {chessScore1}</span>
+              <span>{currentMatch.team1.name}: {chessScore1}</span>
               <span> - </span>
-              <span>{chessScore2}: {currentMatch.team2}</span>
+              <span>{chessScore2}: {currentMatch.team2.name}</span>
             </div>
           </div>
 
           {/* Chess Clocks */}
           <div className="chess-clocks">
             <div className={`clock ${chessActivePlayer === 'white' ? 'active' : ''}`}>
-              <div className="player-name">{currentMatch.team1} (White)</div>
+              <div className="player-name">{currentMatch.team1.name} (White)</div>
               <div className="time">{Math.floor(chessTime1 / 60)}:{(chessTime1 % 60).toString().padStart(2, '0')}</div>
             </div>
             <div className={`clock ${chessActivePlayer === 'black' ? 'active' : ''}`}>
-              <div className="player-name">{currentMatch.team2} (Black)</div>
+              <div className="player-name">{currentMatch.team2.name} (Black)</div>
               <div className="time">{Math.floor(chessTime2 / 60)}:{(chessTime2 % 60).toString().padStart(2, '0')}</div>
             </div>
           </div>
@@ -2490,18 +2633,18 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
             <div className="current-set">
               <div className="set-info">Set {volleyballCurrentSet}</div>
               <div className="serving-indicator">
-                Serving: {volleyballServing === 'team1' ? currentMatch.team1 : currentMatch.team2}
+                 Serving: {volleyballServing === 'team1' ? currentMatch.team1.name : currentMatch.team2.name}
               </div>
             </div>
             <div className="score-display">
               <div className="team-score">
-                <div className="team-name">{currentMatch.team1}</div>
+                <div className="team-name">{currentMatch.team1.name}</div>
                 <div className="current-score">{volleyballScore1}</div>
                 <div className="sets-won">Sets: {volleyballSets1}</div>
               </div>
               <div className="vs">VS</div>
               <div className="team-score">
-                <div className="team-name">{currentMatch.team2}</div>
+                <div className="team-name">{currentMatch.team2.name}</div>
                 <div className="current-score">{volleyballScore2}</div>
                 <div className="sets-won">Sets: {volleyballSets2}</div>
               </div>
@@ -2511,11 +2654,11 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {/* Scoring Controls */}
           <div className="volleyball-scoring-controls">
             <div className="team-controls">
-              <h4>{currentMatch.team1}</h4>
+              <h4>{currentMatch.team1.name}</h4>
               <button onClick={() => handleVolleyballPoint('team1')} className="point-button">+1 Point</button>
             </div>
             <div className="team-controls">
-              <h4>{currentMatch.team2}</h4>
+              <h4>{currentMatch.team2.name}</h4>
               <button onClick={() => handleVolleyballPoint('team2')} className="point-button">+1 Point</button>
             </div>
           </div>
@@ -2548,18 +2691,18 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
             <div className="current-game">
               <div className="game-info">Game {badmintonCurrentGame}</div>
               <div className="serving-indicator">
-                Serving: {badmintonServing === 'player1' ? currentMatch.team1 : currentMatch.team2}
+                 Serving: {badmintonServing === 'player1' ? currentMatch.team1.name : currentMatch.team2.name}
               </div>
             </div>
             <div className="score-display">
               <div className="player-score">
-                <div className="player-name">{currentMatch.team1}</div>
+                <div className="player-name">{currentMatch.team1.name}</div>
                 <div className="current-score">{badmintonScore1}</div>
                 <div className="games-won">Games: {badmintonGames1}</div>
               </div>
               <div className="vs">VS</div>
               <div className="player-score">
-                <div className="player-name">{currentMatch.team2}</div>
+                <div className="player-name">{currentMatch.team2.name}</div>
                 <div className="current-score">{badmintonScore2}</div>
                 <div className="games-won">Games: {badmintonGames2}</div>
               </div>
@@ -2569,11 +2712,11 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {/* Scoring Controls */}
           <div className="badminton-scoring-controls">
             <div className="player-controls">
-              <h4>{currentMatch.team1}</h4>
+              <h4>{currentMatch.team1.name}</h4>
               <button onClick={() => handleBadmintonPoint('player1')} className="point-button">+1 Point</button>
             </div>
             <div className="player-controls">
-              <h4>{currentMatch.team2}</h4>
+              <h4>{currentMatch.team2.name}</h4>
               <button onClick={() => handleBadmintonPoint('player2')} className="point-button">+1 Point</button>
             </div>
           </div>
@@ -2582,42 +2725,61 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
     </div>
   );
 
-  const renderTableTennisScoring = () => (
-    <div className="content-section">
-      <div className="section-header">
-        <button className="back-to-main" onClick={() => setActiveView('main')}>
-          ← Back to Main
-        </button>
-        {selectedTournament && (
-          <button className="back-to-tournament" onClick={() => setActiveView('tournament')}>
-            ← Back to Tournament
+  const renderTableTennisScoring = () => {
+    if (!currentMatch || !currentMatch.team1 || !currentMatch.team2) {
+      return (
+        <div className="content-section">
+          <div className="section-header">
+            <button className="back-to-main" onClick={() => setActiveView('main')}>
+              ← Back to Main
+            </button>
+            <h2 className="section-title">
+              <span className="section-icon">🏓</span>
+              Table Tennis Live Scoring
+            </h2>
+          </div>
+          <div className="error-message">
+            <p>Match data is not available. Please start a new match.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="content-section">
+        <div className="section-header">
+          <button className="back-to-main" onClick={() => setActiveView('main')}>
+            ← Back to Main
           </button>
-        )}
-        <h2 className="section-title">
-          <span className="section-icon">🏓</span>
-          Table Tennis Live Scoring
-        </h2>
-      </div>
-      
-      {currentMatch && (
+          {selectedTournament && (
+            <button className="back-to-tournament" onClick={() => setActiveView('tournament')}>
+              ← Back to Tournament
+            </button>
+          )}
+          <h2 className="section-title">
+            <span className="section-icon">🏓</span>
+            Table Tennis Live Scoring
+          </h2>
+        </div>
+        
         <div className="table-tennis-scoring">
           {/* Scoreboard */}
           <div className="table-tennis-scoreboard">
             <div className="current-game">
               <div className="game-info">Game {tableTennisCurrentGame}</div>
               <div className="serving-indicator">
-                Serving: {tableTennisServing === 'player1' ? currentMatch.team1 : currentMatch.team2}
+                 Serving: {tableTennisServing === 'player1' ? currentMatch.team1.name : currentMatch.team2.name}
               </div>
             </div>
             <div className="score-display">
               <div className="player-score">
-                <div className="player-name">{currentMatch.team1}</div>
+                <div className="player-name">{currentMatch.team1.name}</div>
                 <div className="current-score">{tableTennisScore1}</div>
                 <div className="games-won">Games: {tableTennisGames1}</div>
               </div>
               <div className="vs">VS</div>
               <div className="player-score">
-                <div className="player-name">{currentMatch.team2}</div>
+                <div className="player-name">{currentMatch.team2.name}</div>
                 <div className="current-score">{tableTennisScore2}</div>
                 <div className="games-won">Games: {tableTennisGames2}</div>
               </div>
@@ -2627,18 +2789,18 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
           {/* Scoring Controls */}
           <div className="table-tennis-scoring-controls">
             <div className="player-controls">
-              <h4>{currentMatch.team1}</h4>
+              <h4>{currentMatch.team1.name}</h4>
               <button onClick={() => handleTableTennisPoint('player1')} className="point-button">+1 Point</button>
             </div>
             <div className="player-controls">
-              <h4>{currentMatch.team2}</h4>
+              <h4>{currentMatch.team2.name}</h4>
               <button onClick={() => handleTableTennisPoint('player2')} className="point-button">+1 Point</button>
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const renderPlayerContributions = () => (
     <div className="content-section">
@@ -2647,8 +2809,8 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
         Player Contributions
       </h2>
       <div className="player-stats">
-        {teams.map(team => 
-          team.members.map(member => (
+        {(teams || []).map(team => 
+          (team.members || []).map(member => (
             <div key={`${team.id}-${member}`} className="player-card">
               <div className="player-header">
                 <div className="player-name">{member}</div>
@@ -2724,10 +2886,10 @@ const Arena: React.FC<ArenaProps> = ({ sport }) => {
               </div>
             ))
           ) : (
-            allMatches.map(match => (
+            (allMatches || []).map(match => (
               <div key={match.id} className="history-item">
                 <div className="history-header">
-                  <div className="history-title">{match.team1} vs {match.team2}</div>
+                  <div className="history-title">{match.team1.name} vs {match.team2.name}</div>
                   <div className="history-date">
                     {match.startTime ? new Date(match.startTime).toLocaleDateString() : 'TBD'}
                   </div>

@@ -17,16 +17,7 @@ const Navbar: React.FC = () => {
   };
 
   const handleSportsClick = () => {
-    if (location.pathname === '/') {
-      // If on home page, scroll to sports section
-      const sportsSection = document.getElementById('sports');
-      if (sportsSection) {
-        sportsSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      // Navigate to home page and scroll to sports
-      navigate('/#sports');
-    }
+    navigate('/sports');
   };
 
   const handleLiveScoresClick = () => {

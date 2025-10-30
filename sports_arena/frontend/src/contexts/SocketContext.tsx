@@ -1,30 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
-// Socket.IO types (will be available after npm install)
-interface Socket {
-  on: (event: string, callback: (data: any) => void) => void;
-  off: (event: string, callback?: (data: any) => void) => void;
-  emit: (event: string, data: any) => void;
-  close: () => void;
-}
-
-// Mock Socket.IO until package is installed
-const createSocket = (url: string) => {
-  return {
-    on: (event: string, callback: (data: any) => void) => {
-      console.log(`Socket event listener: ${event}`);
-    },
-    off: (event: string, callback?: (data: any) => void) => {
-      console.log(`Socket event removed: ${event}`);
-    },
-    emit: (event: string, data: any) => {
-      console.log(`Socket emit: ${event}`, data);
-    },
-    close: () => {
-      console.log('Socket closed');
-    }
-  };
-};
+import { io, Socket } from 'socket.io-client';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -56,18 +31,33 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Create mock socket for now (will be replaced with real Socket.IO after npm install)
-    const newSocket = createSocket('http://localhost:5000');
+    console.log('Initializing Socket.IO connection...');
     
-    // Simulate connection
-    setTimeout(() => {
+    // Create real Socket.IO connection
+    const newSocket = io('http://localhost:5000', {
+      transports: ['websocket', 'polling']
+    });
+    
+    // Connection event handlers
+    newSocket.on('connect', () => {
+      console.log('✅ Socket.IO connected:', newSocket.id);
       setIsConnected(true);
-      console.log('Mock Socket.IO connected');
-    }, 1000);
+    });
+    
+    newSocket.on('disconnect', () => {
+      console.log('❌ Socket.IO disconnected');
+      setIsConnected(false);
+    });
+    
+    newSocket.on('connect_error', (error: any) => {
+      console.error('❌ Socket.IO connection error:', error);
+      setIsConnected(false);
+    });
 
     setSocket(newSocket);
 
     return () => {
+      console.log('Closing Socket.IO connection...');
       newSocket.close();
     };
   }, []);
@@ -80,13 +70,19 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   const emitBasketballScoreUpdate = (data: any) => {
     if (socket && isConnected) {
+      console.log('🚀 Emitting basketball score update:', data);
       socket.emit('basketball-score-update', data);
+    } else {
+      console.log('❌ Socket not connected, cannot emit basketball score update');
     }
   };
 
   const emitFootballScoreUpdate = (data: any) => {
     if (socket && isConnected) {
+      console.log('🚀 Emitting football score update:', data);
       socket.emit('football-score-update', data);
+    } else {
+      console.log('❌ Socket not connected, cannot emit football score update');
     }
   };
 
@@ -98,7 +94,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   const joinMatch = (matchId: string) => {
     if (socket && isConnected) {
+      console.log('🚀 Joining match room:', matchId);
       socket.emit('join-match', matchId);
+    } else {
+      console.log('❌ Socket not connected, cannot join match room');
     }
   };
 

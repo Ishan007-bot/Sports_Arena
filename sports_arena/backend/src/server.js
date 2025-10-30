@@ -70,13 +70,13 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
+// API Routes (Authentication disabled for testing)
 app.use('/api/auth', authRoutes);
-app.use('/api/users', authenticateToken, userRoutes);
-app.use('/api/tournaments', authenticateToken, tournamentRoutes);
-app.use('/api/matches', authenticateToken, matchRoutes);
-app.use('/api/teams', authenticateToken, teamRoutes);
-app.use('/api/scoring', authenticateToken, scoringRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/tournaments', tournamentRoutes);
+app.use('/api/matches', matchRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/scoring', scoringRoutes);
 
 // Setup Socket.IO handlers
 setupSocketHandlers(io);

@@ -1,10 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useSocket } from './SocketContext';
 
+interface Team {
+  id: string;
+  name: string;
+  members: string[];
+}
+
 interface Match {
   id: string;
-  team1: string;
-  team2: string;
+  tournamentId: string;
+  team1: Team;
+  team2: Team;
   score1: number;
   score2: number;
   sport: string;
@@ -92,8 +99,9 @@ export const MatchProvider: React.FC<MatchProviderProps> = ({ children }) => {
       });
 
       socket.on('basketball-score-updated', (data: any) => {
-        console.log('Received basketball score update:', data);
+        console.log('🎯 Received basketball score update:', data);
         if (data.matchId && data.scoringData) {
+          console.log('🔄 Updating match with new scores:', data.scoringData);
           updateMatch(data.matchId, {
             score1: data.scoringData.score1 || 0,
             score2: data.scoringData.score2 || 0,
@@ -104,12 +112,16 @@ export const MatchProvider: React.FC<MatchProviderProps> = ({ children }) => {
               totalQuarters: data.scoringData.totalQuarters || 4
             }
           });
+          console.log('✅ Match updated successfully');
+        } else {
+          console.log('❌ Invalid basketball score update data:', data);
         }
       });
 
       socket.on('football-score-updated', (data: any) => {
-        console.log('Received football score update:', data);
+        console.log('🎯 Received football score update:', data);
         if (data.matchId && data.scoringData) {
+          console.log('🔄 Updating match with new scores:', data.scoringData);
           updateMatch(data.matchId, {
             score1: data.scoringData.score1 || 0,
             score2: data.scoringData.score2 || 0,
@@ -120,6 +132,9 @@ export const MatchProvider: React.FC<MatchProviderProps> = ({ children }) => {
               goals: data.scoringData.goals || []
             }
           });
+          console.log('✅ Match updated successfully');
+        } else {
+          console.log('❌ Invalid football score update data:', data);
         }
       });
 

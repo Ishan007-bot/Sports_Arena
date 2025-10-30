@@ -3,27 +3,11 @@ const User = require('../models/User');
 const Match = require('../models/Match');
 
 const setupSocketHandlers = (io) => {
-  // Authentication middleware for Socket.IO
+  // Authentication disabled for testing
   io.use(async (socket, next) => {
-    try {
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-      
-      if (!token) {
-        return next(new Error('Authentication error: No token provided'));
-      }
-
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-      const user = await User.findById(decoded.userId).select('-password');
-      
-      if (!user || !user.isActive) {
-        return next(new Error('Authentication error: Invalid user'));
-      }
-
-      socket.user = user;
-      next();
-    } catch (error) {
-      next(new Error('Authentication error: Invalid token'));
-    }
+    // Skip authentication for testing
+    socket.user = { _id: 'test-user', username: 'test-user', role: 'scorer' };
+    next();
   });
 
   io.on('connection', (socket) => {
@@ -174,12 +158,14 @@ const setupSocketHandlers = (io) => {
 
         await match.save();
 
-        // Broadcast update
-        io.to(`match-${matchId}`).emit('football-score-updated', {
+        // Broadcast update to all connected clients
+        io.emit('football-score-updated', {
           matchId,
           scoringData: match.scoringData.football,
           timestamp: new Date()
         });
+        
+        console.log(`📡 Broadcasting football score update for match ${matchId}:`, match.scoringData.football);
 
       } catch (error) {
         console.error('Football score update error:', error);
@@ -210,12 +196,14 @@ const setupSocketHandlers = (io) => {
 
         await match.save();
 
-        // Broadcast update
-        io.to(`match-${matchId}`).emit('basketball-score-updated', {
+        // Broadcast update to all connected clients
+        io.emit('basketball-score-updated', {
           matchId,
           scoringData: match.scoringData.basketball,
           timestamp: new Date()
         });
+        
+        console.log(`📡 Broadcasting basketball score update for match ${matchId}:`, match.scoringData.basketball);
 
       } catch (error) {
         console.error('Basketball score update error:', error);

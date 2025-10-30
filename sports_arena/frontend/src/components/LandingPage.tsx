@@ -91,12 +91,12 @@ const LandingPage: React.FC = () => {
                   </div>
                   <div className="match-details">
                     <div className="team">
-                      <span className="team-name">{match.team1}</span>
+                      <span className="team-name">{match.team1.name}</span>
                       <span className="team-score">{match.score1}</span>
                     </div>
                     <div className="vs">vs</div>
                     <div className="team">
-                      <span className="team-name">{match.team2}</span>
+                      <span className="team-name">{match.team2.name}</span>
                       <span className="team-score">{match.score2}</span>
                     </div>
                   </div>

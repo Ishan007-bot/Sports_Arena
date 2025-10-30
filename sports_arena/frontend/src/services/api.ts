@@ -11,13 +11,15 @@ export const tournamentAPI = {
       },
       body: JSON.stringify(tournament),
     });
-    return response.json();
+    const data = await response.json();
+    return data.success ? data.tournament : data;
   },
 
   // Get all tournaments
   getAll: async () => {
     const response = await fetch(`${API_BASE_URL}/tournaments`);
-    return response.json();
+    const data = await response.json();
+    return data.success ? data.tournaments : [];
   },
 
   // Get tournament by ID
@@ -58,13 +60,15 @@ export const matchAPI = {
       },
       body: JSON.stringify(match),
     });
-    return response.json();
+    const data = await response.json();
+    return data.success ? data.match : data;
   },
 
   // Get all matches
   getAll: async () => {
     const response = await fetch(`${API_BASE_URL}/matches`);
-    return response.json();
+    const data = await response.json();
+    return data.success ? data.matches : [];
   },
 
   // Get matches by tournament
