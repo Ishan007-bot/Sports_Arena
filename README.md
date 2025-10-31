@@ -1,6 +1,6 @@
 # Sports Arena Management System
 
-A comprehensive web application for managing live sports scoring across multiple sports with real-time updates, user authentication, and match history tracking.
+A comprehensive web application for managing live sports scoring across multiple sports with real-time updates and view, user authentication, and match history tracking.
 
 ## 🏆 Features
 
